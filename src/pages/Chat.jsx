@@ -1,6 +1,5 @@
 import { Stomp } from "@stomp/stompjs";
 import React, { useRef, useState, useEffect } from "react";
-import SockJS from "sockjs-client"; // sockjs-client import
 
 export default function Chat() {
   const stompClient = useRef(null); // WebSocket 연결 객체

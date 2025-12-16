@@ -5,12 +5,14 @@ import './App.css';
 import Chat from './pages/Chat';
 import ChatRoomList from "./pages/ChatRoomList";
 import IphoneLayout from "./layouts/IphoneLayout";
+import Home from "./pages/home";
 
 function App() {
   return (
     <BrowserRouter>
       <IphoneLayout>
         <Routes>
+          <Route path="/" element={<Home />}/>
           <Route path="/chats" element={<ChatRoomList />}/>
           <Route path="/chats/:chat_id" element={<Chat />}/>
         </Routes>
