@@ -129,7 +129,7 @@ export default function Chat() {
           {messages.map((msg, index) => (
             <div className="flex items-start gap-2">
               {/* Profile Image */}
-              <div className="w-14 h-14 border rounded-full bg-gray-400"></div>
+              <div className="w-14 h-14 border rounded-full bg-red-400"></div>
               <div className="flex flex-col gap-1">
                 {/* User Name */}
                 <div key={index}>
