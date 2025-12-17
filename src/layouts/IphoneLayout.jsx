@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import NavigationBar from "../components/NavigationBar.jsx";
-import Title from "../components/Title.jsx";
+import TopBar from "../components/TopBar.jsx";
 
 export default function IphoneLayout({ children }) {
   const location = useLocation();
@@ -13,10 +13,10 @@ export default function IphoneLayout({ children }) {
         {/* Status Bar */}
         <div className="h-10 flex items-center justify-center text-sm font-medium"></div>
 
-        {/* Title Bar (공통 기능은 아님) */}
+        {/* Top Bar (공통 기능은 아님) */}
         {!isHome && (
           <div className="h-[48px]">
-            <Title />
+            <TopBar />
           </div>
         )}
 

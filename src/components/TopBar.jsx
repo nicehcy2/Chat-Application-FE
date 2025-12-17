@@ -5,7 +5,7 @@ import AlarmImage from "../assets/images/alarm.png";
 import OptionsImage from "../assets/images/options-horizontal.png";
 import { useNavigate } from "react-router-dom";
 
-export default function Title() {
+export default function TopBar() {
   const navigate = useNavigate();
 
   return (
