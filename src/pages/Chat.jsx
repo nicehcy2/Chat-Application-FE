@@ -1,6 +1,8 @@
 import { Stomp } from "@stomp/stompjs";
 import React, { useRef, useState, useEffect } from "react";
 
+import SendButtonImage from "../assets/images/chat-send-button.png";
+
 export default function Chat() {
   const stompClient = useRef(null); // WebSocket 연결 객체
   const bottomRef = useRef(null);
@@ -62,7 +64,7 @@ export default function Chat() {
         messageType: "MESSAGE",
         content: inputValue,
         chatRoomId: 1, //chatRoomId,
-        senderId: 1 //senderId
+        senderId: 2, //senderId
       };
       stompClient.current.send(
         `/pub/chat.message.${chatRoomId}`,
@@ -117,7 +119,7 @@ export default function Chat() {
   }, [chatRoomId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView();
   }, [messages.length]);
 
   return (
@@ -125,39 +127,73 @@ export default function Chat() {
       <div>{/* Text */}</div>
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-3 space-y-4">
-          {messages.map((msg, index) => (
-            <div className="flex items-start gap-2">
-              {/* Profile Image */}
-              <div className="w-14 h-14 border rounded-full bg-red-400"></div>
-              <div className="flex flex-col gap-1">
-                {/* User Name */}
-                <div key={index}>
-                  <strong>{msg.senderId}</strong>
-                </div>
-                {/* Message Content */}
-                <div className="px-3 py-2 border rounded-xl bg-gray-200 max-w-[300px] text-[15px]">
-                  {msg.content}
+        <div className="p-3">
+          {messages.map((msg, index) => {
+            const showProfile =
+              index == 0 || messages[index - 1].senderId !== msg.senderId;
+
+            return (
+              <div
+                className={`flex gap-2 ${
+                  showProfile && index !== 0 ? "mt-3" : "mt-0"
+                }`}
+              >
+                {/* Profile Image */}
+                {showProfile ? (
+                  <div className="w-12 h-12 border rounded-full bg-red-400"></div>
+                ) : (
+                  <div className="w-12"></div>
+                )}
+
+                <div className="flex flex-col gap-1 text-sm">
+                  {/* User Name */}
+                  {showProfile ? (
+                    <div key={index}>
+                      <strong>{msg.senderId}</strong>
+                    </div>
+                  ) : (
+                    <div key={index}></div>
+                  )}
+
+                  <div className="flex flex-row gap-2">
+                    {/* Message Content */}
+                    <div className="px-3 py-2 border rounded-xl bg-gray-50 max-w-[300px] text-[16px]">
+                      {msg.content}
+                    </div>
+                    <div className="flex flex-col justify-end">
+                      {/* unread count */}
+                      <div className="text-[#5B3FE7] text-[9px] leading-none">
+                        {msg.unreadCount}
+                      </div>
+                      {/* timestamp */}
+                      <div className="text-[9px]">
+                        {new Date(msg.timestamp).toLocaleTimeString("ko-KR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-
-          <div ref={bottomRef} />
+            );
+          })}
         </div>
+        <div ref={bottomRef} />
       </div>
 
       {/* 입력 영역 */}
-      <div className="border p-3 flex gap-2">
+      <div className="flex flex-row justify-end py-2 px-4 gap-1">
         <input
           type="text"
           value={inputValue}
-          className="flex-1 border rounded-4xl px-3 py-2"
+          className="w-[264px] h-[32px] border rounded-full px-3 py-4"
           placeholder="메시지를 입력하세요"
           onChange={(e) => setInputValue(e.target.value)}
         />
-        <button className="px-2 border rounded-xl" onClick={sendMessage}>
-          전송
+        <button onClick={sendMessage}>
+          <img src={SendButtonImage} alt="전송"></img>
         </button>
       </div>
     </div>

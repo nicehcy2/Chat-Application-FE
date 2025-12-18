@@ -1,10 +1,11 @@
-import { useLocation } from "react-router-dom";
+import { matchPath, useLocation } from "react-router-dom";
 import NavigationBar from "../components/NavigationBar.jsx";
 import TopBar from "../components/TopBar.jsx";
 
 export default function IphoneLayout({ children }) {
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const isChat = matchPath("/chats/:chatId", location.pathname);
 
   return (
     <div className="min-h-screen">
@@ -14,7 +15,7 @@ export default function IphoneLayout({ children }) {
         <div className="h-10 flex items-center justify-center text-sm font-medium"></div>
 
         {/* Top Bar (공통 기능은 아님) */}
-        {!isHome && (
+        {!isHome && !isChat && (
           <div className="h-[48px]">
             <TopBar />
           </div>
@@ -24,7 +25,7 @@ export default function IphoneLayout({ children }) {
         <div className="flex-1 overflow-hidden">{children}</div>
 
         {/* Navigation Bar (공통 기능은 아님) */}
-        {!isHome && (
+        {!isHome && !isChat && (
           <div className="h-[60px]">
             <NavigationBar />
           </div>

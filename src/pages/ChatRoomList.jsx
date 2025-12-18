@@ -9,6 +9,7 @@ const chatRoomList = [
     chatRoomRule: "string", // 채팅방 규칙
     participationCount: 45, // 현재 인원수
     lastChatMessage: `지금 양복 조던을 방송 중에 찾고 있었다고 합니다. 이 양조가 왜 거래되는 건지 이해가 되지 않네요.`,
+    unreadChatCount: 3,
     updatedAt: "오후 12:54",
   },
   {
@@ -16,8 +17,9 @@ const chatRoomList = [
     chatRoomTitle: "같은 실수 반복 금지",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙
-    participationCount: 1, // 현재 인원수
+    participationCount: 12, // 현재 인원수
     lastChatMessage: "안녕하세여!",
+    unreadChatCount: 3,
     updatedAt: "오전 11:54",
   },
   {
@@ -27,6 +29,7 @@ const chatRoomList = [
     chatRoomRule: "string", // 채팅방 규칙
     participationCount: 45, // 현재 인원수
     lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
     updatedAt: "어제",
   },
 ];
@@ -84,9 +87,11 @@ function ChatRoomList(props) {
                 <div className="text-xs line-clamp-2 w-[220px] text-[#999]">
                   {chatRoom.lastChatMessage}
                 </div>
-                <div className="h-6 px-2 min-w-[24px] text-xs text-white font-semibold border rounded-full bg-[#11B5A4] flex flex-row items-center justify-center mt-1">
-                  {chatRoom.participationCount}
-                </div>
+                {chatRoom.unreadChatCount > 0 && (
+                  <div className="h-6 px-2 min-w-[24px] text-xs text-white font-semibold border rounded-full bg-[#11B5A4] flex flex-row items-center justify-center mt-1">
+                    {chatRoom.unreadChatCount}
+                  </div>
+                )}
               </div>
             </div>
           </div>
