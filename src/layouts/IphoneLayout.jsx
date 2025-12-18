@@ -26,7 +26,7 @@ export default function IphoneLayout({ children }) {
 
         {/* Navigation Bar (공통 기능은 아님) */}
         {!isHome && !isChat && (
-          <div className="h-[60px]">
+          <div className="h-[68px]">
             <NavigationBar />
           </div>
         )}

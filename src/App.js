@@ -14,7 +14,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />}/>
           <Route path="/chats" element={<ChatRoomList />}/>
-          <Route path="/chats/:chat_id" element={<Chat />}/>
+          <Route path="/chats/:chatRoomId" element={<Chat />}/>
         </Routes>
       </IphoneLayout>
     </BrowserRouter>

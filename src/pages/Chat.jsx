@@ -1,16 +1,23 @@
 import { Stomp } from "@stomp/stompjs";
 import React, { useRef, useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 import SendButtonImage from "../assets/images/chat-send-button.png";
+import BackButtonImage from "../assets/images/back-button.png";
+import ChatRankButtonImage from "../assets/images/chat-rank.png";
+import ChatOptionImage from "../assets/images/chat-option.png";
 
 export default function Chat() {
   const stompClient = useRef(null); // WebSocket 연결 객체
   const bottomRef = useRef(null);
+  const navigate = useNavigate();
 
   const [messages, setMessages] = useState([]); // 메시지 저장 상태
   const [inputValue, setInputValue] = useState(""); // 사용자 입력 상태
-  const [chatRoomId, setChatRoomId] = useState("1"); // 채팅방 ID
-  const [senderId, setSenderId] = useState("1"); // 사용자 ID
+  const { chatRoomId } = useParams(); // 채팅방 ID
+  const [senderId, setSenderId] = useState(""); // 사용자 ID
+  const [chatRoomTitle, setChatRoomTitle] = useState("");
+  const [participationCount, setParticipationCount] = useState("");
 
   // WebSocket 연결 설정
   const connect = () => {
@@ -123,8 +130,35 @@ export default function Chat() {
   }, [messages.length]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div>{/* Text */}</div>
+    <div className="flex flex-col h-full tracking-tight">
+      <div className="flex flex-row justify-between h-[56px] items-center">
+        <div className="flex flex-row h-full items-center gap-1 p-4">
+          <img
+            src={BackButtonImage}
+            alt="뒤로가기 버튼"
+            className="w-5 h-5"
+            onClick={() => navigate(-1)}
+          ></img>
+          <span className="text-xl font-bold px-2">
+            {chatRoomTitle}무지출이 대세다
+          </span>
+          <span className="text-sm font-bold text-[#3C19B0]">
+            {participationCount}35
+          </span>
+        </div>
+        <div className="flex flex-row gap-3 h-full items-center p-4">
+          <img
+            src={ChatRankButtonImage}
+            alt="채팅 랭크 이미지"
+            className="w-4 h-6"
+          ></img>
+          <img
+            src={ChatOptionImage}
+            alt="채팅 옵션 이미지"
+            className="w-5 h-4"
+          ></img>
+        </div>
+      </div>
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-3">
@@ -132,6 +166,9 @@ export default function Chat() {
             const showProfile =
               index == 0 || messages[index - 1].senderId !== msg.senderId;
 
+            {
+              /* TODO: 내 채팅이면 프로필 삭제 + 수직축 정렬 역순으로 */
+            }
             return (
               <div
                 className={`flex gap-2 ${
@@ -163,6 +200,8 @@ export default function Chat() {
                     <div className="flex flex-col justify-end">
                       {/* unread count */}
                       <div className="text-[#5B3FE7] text-[9px] leading-none">
+                        {/* TODO: msg 타입에 따라서 형식 다르게 하기 */}
+                        {/* TODO: 날짜 텍스트 만들기(날짜 변경 후 첫번째 채팅이 오면 그 위에 적용) */}
                         {msg.unreadCount}
                       </div>
                       {/* timestamp */}

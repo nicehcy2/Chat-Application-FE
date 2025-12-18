@@ -16,9 +16,9 @@ export default function TopBar() {
         className="w-[23px] h-[23px]"
         onClick={() => navigate("/")}
       ></img>
-      <div className="flex flex-row h-full items-center gap-2">
-        <img src={AlarmImage} alt="logo" className="w-[19px] h-[19px]"></img>
-        <img src={OptionsImage} alt="logo" className="w-[16px] h-[2px]"></img>
+      <div className="flex flex-row h-full items-center gap-3">
+        <img src={AlarmImage} alt="logo" className="w-[20px] h-[20px]"></img>
+        <img src={OptionsImage} alt="logo" className="w-[16px] h-[3px]"></img>
       </div>
     </div>
   );

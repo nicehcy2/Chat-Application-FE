@@ -32,6 +32,96 @@ const chatRoomList = [
     unreadChatCount: 0,
     updatedAt: "어제",
   },
+  {
+    chatRoomId: 3,
+    chatRoomTitle: "피어나 모여!",
+    chatRoomThumbnail: "image.com", // 이미지 S3 주소
+    chatRoomRule: "string", // 채팅방 규칙
+    participationCount: 45, // 현재 인원수
+    lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
+    updatedAt: "어제",
+  },
+  {
+    chatRoomId: 3,
+    chatRoomTitle: "피어나 모여!",
+    chatRoomThumbnail: "image.com", // 이미지 S3 주소
+    chatRoomRule: "string", // 채팅방 규칙
+    participationCount: 45, // 현재 인원수
+    lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
+    updatedAt: "어제",
+  },
+  {
+    chatRoomId: 3,
+    chatRoomTitle: "피어나 모여!",
+    chatRoomThumbnail: "image.com", // 이미지 S3 주소
+    chatRoomRule: "string", // 채팅방 규칙
+    participationCount: 45, // 현재 인원수
+    lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
+    updatedAt: "어제",
+  },
+  {
+    chatRoomId: 3,
+    chatRoomTitle: "피어나 모여!!",
+    chatRoomThumbnail: "image.com", // 이미지 S3 주소
+    chatRoomRule: "string", // 채팅방 규칙
+    participationCount: 45, // 현재 인원수
+    lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
+    updatedAt: "어제",
+  },
+  {
+    chatRoomId: 3,
+    chatRoomTitle: "피어나 모여!!!",
+    chatRoomThumbnail: "image.com", // 이미지 S3 주소
+    chatRoomRule: "string", // 채팅방 규칙
+    participationCount: 45, // 현재 인원수
+    lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
+    updatedAt: "어제",
+  },
+  {
+    chatRoomId: 3,
+    chatRoomTitle: "피어나 모여!!!!!!",
+    chatRoomThumbnail: "image.com", // 이미지 S3 주소
+    chatRoomRule: "string", // 채팅방 규칙
+    participationCount: 45, // 현재 인원수
+    lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
+    updatedAt: "어제",
+  },
+  {
+    chatRoomId: 3,
+    chatRoomTitle: "피어나 모여!",
+    chatRoomThumbnail: "image.com", // 이미지 S3 주소
+    chatRoomRule: "string", // 채팅방 규칙
+    participationCount: 451, // 현재 인원수
+    lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
+    updatedAt: "어제",
+  },
+  {
+    chatRoomId: 3,
+    chatRoomTitle: "피어나 모여!",
+    chatRoomThumbnail: "image.com", // 이미지 S3 주소
+    chatRoomRule: "string", // 채팅방 규칙
+    participationCount: 45, // 현재 인원수
+    lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
+    updatedAt: "어제",
+  },
+  {
+    chatRoomId: 3,
+    chatRoomTitle: "피어나 모여!",
+    chatRoomThumbnail: "image.com", // 이미지 S3 주소
+    chatRoomRule: "string", // 채팅방 규칙
+    participationCount: 45, // 현재 인원수
+    lastChatMessage: "또 사셨어요? ㅋㅋㅋ.",
+    unreadChatCount: 0,
+    updatedAt: "어제",
+  },
 ];
 
 function ChatRoomList(props) {
@@ -49,11 +139,11 @@ function ChatRoomList(props) {
   }
 
   return (
-    <div className="flex flex-col px-4 tracking-tight">
+    <div className="flex flex-col pl-4 tracking-tight h-full">
       <div className="text-[22px] font-sans font-bold py-2 text-[#3C19B0]">
         나의 채팅 그룹
       </div>
-      <div className="flex flex-col gap-3 py-2">
+      <div className="flex flex-col gap-3 py-2 overflow-y-auto h-full pr-2">
         {chatRoomList.map((chatRoom) => (
           <div
             key={chatRoom.chatRoomId}
