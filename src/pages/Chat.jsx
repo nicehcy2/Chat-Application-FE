@@ -1,6 +1,7 @@
 import { Stomp } from "@stomp/stompjs";
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 import SendButtonImage from "../assets/images/chat-send-button.png";
 import BackButtonImage from "../assets/images/back-button.png";
@@ -11,6 +12,7 @@ export default function Chat() {
   const stompClient = useRef(null); // WebSocket 연결 객체
   const bottomRef = useRef(null);
   const navigate = useNavigate();
+  const { auth } = useAuth(); // { accessToken, userId }
 
   const [messages, setMessages] = useState([]); // 메시지 저장 상태
   const [inputValue, setInputValue] = useState(""); // 사용자 입력 상태
@@ -19,21 +21,34 @@ export default function Chat() {
   const [chatRoomTitle, setChatRoomTitle] = useState("");
   const [participationCount, setParticipationCount] = useState("");
 
+  const WEBSOCKET_URL = "ws://localhost:8080/ws";
+  const GATEWAY_SERVER_URL = "http://localhost:8072";
+  const CHAT_APISERVER_URL = "/chat-api-service";
+
   // WebSocket 연결 설정
   const connect = () => {
-    const socket = new WebSocket("ws://localhost:8080/ws");
+    const socket = new WebSocket(WEBSOCKET_URL);
     stompClient.current = Stomp.over(socket); // Stomp 클라이언트 생성
 
-    stompClient.current.connect({ "x-user-id": 2 }, () => {
-      console.log("Connected to WebSocket server!");
+    // 로그인 떄 저장해준 JWT 토큰 가져오기
 
-      // 구독: 서버에서 전송하는 메시지를 수신
-      stompClient.current.subscribe(`/sub/chatroom${chatRoomId}`, (message) => {
-        const newMessage = JSON.parse(message.body);
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-      });
+    stompClient.current.connect(
+      {
+        Authorization: `Bearer ${auth.accessToken}`,
+      },
+      () => {
+        console.log("Connected to WebSocket server!");
 
-      /*
+        // 구독: 서버에서 전송하는 메시지를 수신
+        stompClient.current.subscribe(
+          `/sub/chatroom${chatRoomId}`,
+          (message) => {
+            const newMessage = JSON.parse(message.body);
+            setMessages((prevMessages) => [...prevMessages, newMessage]);
+          },
+        );
+
+        /*
       stompClient.current.subscribe(`/topic/read.room.${chatRoomId}`, (message) => {
         const newMessage = JSON.parse(message.body);
         console.log("Received Read Message:", newMessage);
@@ -44,14 +59,15 @@ export default function Chat() {
         console.log("Received Setting Message:", newMessage);
       });
       */
-    });
+      },
+    );
   };
 
   const updateTimestamp = (messageId, newTimestamp) => {
     setMessages((prevMessages) =>
       prevMessages.map((msg) =>
-        msg.id === messageId ? { ...msg, timestamp: newTimestamp } : msg
-      )
+        msg.id === messageId ? { ...msg, timestamp: newTimestamp } : msg,
+      ),
     );
   };
 
@@ -76,7 +92,7 @@ export default function Chat() {
       stompClient.current.send(
         `/pub/chat.message.${chatRoomId}`,
         {},
-        JSON.stringify(message)
+        JSON.stringify(message),
       );
       setInputValue(""); // 입력 필드 초기화
     }
@@ -96,7 +112,7 @@ export default function Chat() {
     stompClient.current.send(
       `/pub/read.message.${chatRoomId}`,
       {},
-      JSON.stringify(readMessageRequestDto)
+      JSON.stringify(readMessageRequestDto),
     );
   };
 
@@ -104,7 +120,14 @@ export default function Chat() {
   const fetchMessages = async () => {
     try {
       const response = await fetch(
-        `http://localhost:8180/api/chats/${chatRoomId}/messages/test`
+        `${GATEWAY_SERVER_URL}${CHAT_APISERVER_URL}/api/chats/${chatRoomId}/messages/test`,
+        {
+          headers: {
+            Authorization: `Bearer ${auth.accessToken}`,
+            Accept: "application/json",
+          },
+          credentials: "include", // refresh token 쿠키 쓰면 유지
+        },
       );
       if (response.ok) {
         const data = await response.json();

@@ -7,20 +7,21 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col items-center pt-36">
+      <div className="flex flex-1 flex-col items-center justify-center">
         <img src={LogoImage} alt="logo" className="w-[108px] h-[102px]" />
       </div>
-      <div className="mt-48 flex flex-col gap-2 p-3">
-        <input
-          type="text"
-          placeholder="이름을 입력해주세요."
+      <div className="mb-16 flex flex-col gap-2 p-3">
+        <button
           className="border border-black rounded-xl p-3"
-        />
+          onClick={() => navigate("/login")}
+        >
+          로그인
+        </button>
         <button
           className="border border-black rounded-xl p-3"
           onClick={() => navigate("/chats")}
         >
-          시작하기
+          회원가입
         </button>
       </div>
     </div>
