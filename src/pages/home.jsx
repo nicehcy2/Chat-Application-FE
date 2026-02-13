@@ -19,7 +19,7 @@ export default function Home() {
         </button>
         <button
           className="border border-black rounded-xl p-3"
-          onClick={() => navigate("/chats")}
+          onClick={() => navigate("/register")}
         >
           회원가입
         </button>

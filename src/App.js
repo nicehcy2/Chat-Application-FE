@@ -7,6 +7,7 @@ import ChatRoomList from "./pages/ChatRoomList";
 import IphoneLayout from "./layouts/IphoneLayout";
 import Home from "./pages/home";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/chats" element={<ChatRoomList />}/>
           <Route path="/chats/:chatRoomId" element={<Chat />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </IphoneLayout>
     </BrowserRouter>
