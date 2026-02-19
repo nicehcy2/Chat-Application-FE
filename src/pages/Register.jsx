@@ -29,7 +29,7 @@ function Register() {
                         placeholder=""
                         value={nickname}
                         onChange={(e) => setNickname(e.target.value)}
-                        className="w-full h-12 rounded-2xl bg-gray-100"/>
+                        className="w-full h-10 rounded-2xl bg-gray-100"/>
                     <span className="absolute right-4 top-1/2 -translate-y-1/2">
                         {nickname.length}/{maxNicknameLen}
                     </span>
