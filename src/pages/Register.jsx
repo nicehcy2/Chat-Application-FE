@@ -1,42 +1,93 @@
-import React, { useState } from "react";
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import BackButtonImage from "../assets/images/back-button.png";
+import LabeledInput from "../components/LabeledInput";
+import LabeledSelect from "../components/LabeledSelect";
+import CompleteButton from "../components/CompleteButton";
 
 function Register() {
 
     const navigate = useNavigate();
     const [nickname, setNickname] = useState("");
+    const [gender, setGender] = useState("");
+    const [ageGroup, setAgeGroup] = useState("");
+    const [job, setJob] = useState("");
+    const [nicknameError, setNicknameError] = useState("");
     const maxNicknameLen = 10;
+
+    // TODO: url 링크는 변경하자
+    const URL = "http://localhost";
+
+    const handleSubmit = async () => {
+        try {
+            
+            if (!nickname) {
+                setNicknameError("닉네임을 입력해주세요.");
+                return;
+            }
+
+            const res = await fetch(URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({ nickname, gender, ageGroup, job}),
+            })
+
+            if (!res.ok) throw new Error("register failed");
+
+            navigate("/chats");
+        } catch (error) {
+            console.log(error);
+        }
+    };
     
     return (
-        <div className="h-full">
-            <div className="p-4">
-                <img
-                    src={BackButtonImage}
-                    alt="뒤로가기 버튼"
-                    className="w-5 h-5"
-                    onClick={() => navigate(-1)}
-                ></img>
-            </div>
-            <div className="px-5">
-                <p class="text-xl text-[#583FE7] font-bold tracking-[-0.08em]">
-                1. 닉네임
-                </p>
-                <div className="relative">
-                    <input
-                        type="text"
-                        maxLength={maxNicknameLen}
-                        placeholder=""
-                        value={nickname}
-                        onChange={(e) => setNickname(e.target.value)}
-                        className="w-full h-10 rounded-2xl bg-gray-100"/>
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2">
-                        {nickname.length}/{maxNicknameLen}
-                    </span>
-                </div>
-            </div>
+      <div className="h-full">
+        <div className="p-4">
+          <img
+            src={BackButtonImage}
+            alt="뒤로가기 버튼"
+            className="w-5 h-5"
+            onClick={() => navigate(-1)}
+          />
         </div>
-    )
+
+        <div className="px-5 flex flex-col gap-8">
+          <LabeledInput
+            label="1. 닉네임"
+            value={nickname}
+            onChange={(value) => {
+              setNickname(value);
+              if (value) setNicknameError("");
+            }}
+            maxLength={maxNicknameLen}
+            error={nicknameError}
+          />
+          <LabeledSelect
+            label="2. 성별을 알려주세요."
+            options={["여자", "남자"]}
+            value={gender}
+            onChange={setGender}
+          />
+          <LabeledSelect
+            label="3. 연령대를 알려주세요."
+            options={["14~19세", "20대", "30대", "40대", "50대", "60대 이상"]}
+            value={ageGroup}
+            onChange={setAgeGroup}
+          />
+          <LabeledSelect
+            label="4. 현재 하시는 일을 알려주세요."
+            options={["학생", "직장인", "주부", "자영업자"]}
+            value={job}
+            onChange={setJob}
+          />
+          <CompleteButton onChange={handleSubmit} />
+        </div>
+      </div>
+    );
 }
 
 export default Register
