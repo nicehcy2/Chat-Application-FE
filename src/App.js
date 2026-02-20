@@ -15,7 +15,7 @@ function App() {
     <BrowserRouter>
       <IphoneLayout>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/auth" element={<AuthPage />}/>
           <Route path="/chats" element={<ProtectedRoute><ChatRoomList /></ProtectedRoute>}/>
           <Route path="/chats/:chatRoomId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
