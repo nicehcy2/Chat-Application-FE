@@ -2,6 +2,7 @@ import { Stomp } from "@stomp/stompjs";
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useAuthFetch } from "../hooks/useAuthFetch";
 
 import SendButtonImage from "../assets/images/chat-send-button.png";
 import BackButtonImage from "../assets/images/back-button.png";
@@ -13,6 +14,7 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const navigate = useNavigate();
   const { auth } = useAuth(); // { accessToken, userId }
+  const authFetch = useAuthFetch(); // 요청 할 때 401 뜨면 refresh
 
   const [messages, setMessages] = useState([]); // 메시지 저장 상태
   const [inputValue, setInputValue] = useState(""); // 사용자 입력 상태
@@ -117,6 +119,7 @@ export default function Chat() {
   };
 
   // 기존 채팅 메시지 가져오기
+  /*
   const fetchMessages = async () => {
     try {
       const response = await fetch(
@@ -127,6 +130,29 @@ export default function Chat() {
             Accept: "application/json",
           },
           credentials: "include", // refresh token 쿠키 쓰면 유지
+        },
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data); // 기존 메시지 설정
+        console.log("fetch successed.");
+      } else {
+        console.error("Failed to fetch messages:", response.status);
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  };*/
+
+  const fetchMessages = async () => {
+    try {
+      const response = await authFetch(
+        `${GATEWAY_SERVER_URL}${CHAT_APISERVER_URL}/api/chats/${chatRoomId}/messages/test`,
+        {
+          headers: {
+            Authorization: `Bearer ${auth.accessToken}`,
+            Accept: "application/json",
+          },
         },
       );
       if (response.ok) {
