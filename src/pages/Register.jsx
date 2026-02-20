@@ -15,8 +15,8 @@ function Register() {
     const [nicknameError, setNicknameError] = useState("");
     const maxNicknameLen = 10;
 
-    // TODO: url 링크는 변경하자
-    const URL = "http://localhost";
+    const GATEWAY_SERVER_URL = "http://localhost:8072";
+    const REGISTER_URL = "/user-service/signup";
 
     const handleSubmit = async () => {
         try {
@@ -26,14 +26,24 @@ function Register() {
                 return;
             }
 
-            const res = await fetch(URL, {
+        const genderCode = gender === "남자" ? "M" :"W";
+
+        const res = await fetch(GATEWAY_SERVER_URL + REGISTER_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
                 },
                 credentials: "include",
-                body: JSON.stringify({ nickname, gender, ageGroup, job}),
+                // TODO: json 값 사용자 입력에 맞추도록 바꾸자.
+                body: JSON.stringify({ 
+                  nickname, 
+                  password: "1234",
+                  gender: genderCode,
+                  userRole: "USER",
+                  email: `${nickname}@naver.com`,
+                  ImageUrl: "image.url"
+                }),
             })
 
             if (!res.ok) throw new Error("register failed");
