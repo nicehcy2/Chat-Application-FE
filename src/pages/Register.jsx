@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import BackButtonImage from "../assets/images/back-button.png";
+import BackButton from "../components/BackButton";
 import LabeledInput from "../components/LabeledInput";
 import LabeledSelect from "../components/LabeledSelect";
 import CompleteButton from "../components/CompleteButton";
@@ -47,12 +47,7 @@ function Register() {
     return (
       <div className="h-full">
         <div className="p-4">
-          <img
-            src={BackButtonImage}
-            alt="뒤로가기 버튼"
-            className="w-5 h-5"
-            onClick={() => navigate(-1)}
-          />
+          <BackButton />
         </div>
 
         <div className="px-5 flex flex-col gap-8">
@@ -84,7 +79,7 @@ function Register() {
             value={job}
             onChange={setJob}
           />
-          <CompleteButton onChange={handleSubmit} />
+          <CompleteButton label="완료" onChange={handleSubmit} />
         </div>
       </div>
     );

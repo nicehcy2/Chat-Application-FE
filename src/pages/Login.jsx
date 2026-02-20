@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext"
+import CompleteButton from "../components/CompleteButton";
+import BackButton from "../components/BackButton";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -41,37 +43,44 @@ export default function Login() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <form onSubmit={handleSubmit} className="flex flex-col">
-        <label className="flex flex-col">
-          <span className="text-sm">이메일</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@example.com"
-            className="border border-black/30 rounded-xl p-3 outline-none"
-            autoComplete="email"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-sm">비밀번호</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="비밀번호"
-            className="border border-black/30 rounded-xl p-3 outline-none"
-            autoComplete="current-password"
-          />
-        </label>
-        <button
-          type="submit"
-          className="border border-black rounded-xl p-3 disabled:opacity-60"
-        >
-          로그인
-        </button>
-      </form>
+    <div className="h-full">
+      <div className="p-4">
+        <BackButton />
+      </div>
+      <div className="flex flex-col px-4 justify-center h-full gap-8 pb-20">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-12">
+          <div className="flex flex-col gap-4">
+            <p className="text-2xl text-[#583FE7] font-bold tracking-[-0.08em]">
+              로그인
+            </p>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="이메일을 입력해주세요."
+              className="border border-black/30 rounded-xl p-3 outline-none"
+              autoComplete="email"
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="전화번호를 입력해주세요."
+              className="border border-black/30 rounded-xl p-3 outline-none"
+              autoComplete="current-password"
+            />
+            <p className="text-xs text-right text-gray-500">
+              <Link to="/register">비밀번호 찾기</Link>
+            </p>
+          </div>
+          <CompleteButton label="로그인" />
+        </form>
+        <p className="text-xs text-center text-gray-500">아직 회원이 아니신가요?{" "} 
+          <Link to="/register" className="text-[#583FE7] font-bold">
+            회원가입
+          </Link>
+          </p>
+      </div>
     </div>
   );
 }

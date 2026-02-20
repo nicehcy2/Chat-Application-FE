@@ -5,9 +5,12 @@ import TopBar from "../components/TopBar.jsx";
 export default function IphoneLayout({ children }) {
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const isRegister = location.pathname === "/register";
   const isChat = matchPath("/chats/:chatId", location.pathname);
+  const isLogin = location.pathname === "/login";
 
   return (
+
     <div className="min-h-screen flex justify-center">
       {/* iPhone Frame */}
       <div
@@ -21,7 +24,7 @@ export default function IphoneLayout({ children }) {
         <div className="h-10 flex items-center justify-center text-sm font-medium"></div>
 
         {/* Top Bar (공통 기능은 아님) */}
-        {!isHome && !isChat && (
+        {!isHome && !isChat && !isRegister && !isLogin && (
           <div className="h-[48px]">
             <TopBar />
           </div>
@@ -31,7 +34,7 @@ export default function IphoneLayout({ children }) {
         <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">{children}</div>
 
         {/* Navigation Bar (공통 기능은 아님) */}
-        {!isHome && !isChat && (
+        {!isHome && !isChat && !isRegister && !isLogin && (
           <div className="h-[68px]">
             <NavigationBar />
           </div>
