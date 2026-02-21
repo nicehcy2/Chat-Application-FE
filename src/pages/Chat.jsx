@@ -19,7 +19,6 @@ export default function Chat() {
   const [messages, setMessages] = useState([]); // 메시지 저장 상태
   const [inputValue, setInputValue] = useState(""); // 사용자 입력 상태
   const { chatRoomId } = useParams(); // 채팅방 ID
-  const [senderId, setSenderId] = useState(""); // 사용자 ID
   const [chatRoomTitle, setChatRoomTitle] = useState("");
   const [participationCount, setParticipationCount] = useState("");
 
@@ -89,7 +88,7 @@ export default function Chat() {
         messageType: "MESSAGE",
         content: inputValue,
         chatRoomId: 1, //chatRoomId,
-        senderId: 2, //senderId
+        senderId: auth.userId, //senderId
       };
       stompClient.current.send(
         `/pub/chat.message.${chatRoomId}`,

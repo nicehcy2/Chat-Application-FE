@@ -4,7 +4,7 @@ const AuthContext = createContext(); // 전역으로 공유할 수 있는 파이
 
 export const AuthProvider = ({ children }) => {
     
-    const [auth, setAuth] = useState({ accessToken: null, sessionId: null });
+    const [auth, setAuth] = useState({ accessToken: null, sessionId: null, userId: null });
     const [loading, setLoading] = useState(true); // loading으로 refresh가 호출되기 전에 auth로 넘어가는 것을 막음.
     const GATEWAY_SERVER_URL = "http://localhost:8072";
     const REFRESH_URL = "/user-service/refresh";
@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
         })
         .then(res => res.json())
         // TODO: 추후에 sessionId 추가
-        .then(({ accessToken }) => setAuth({ accessToken }))
+        .then(({ accessToken, sessionId, userId }) => setAuth({ accessToken, sessionId, userId }))
         .catch(() => {})
         .finally(() => setLoading(false));
     }, []);

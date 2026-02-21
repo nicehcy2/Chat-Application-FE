@@ -26,13 +26,13 @@ export function useAuthFetch() {
         });
 
         if (!refreshRes.ok) {
-            setAuth({ accessToken: null, sessionId: null });
+            setAuth({ accessToken: null, sessionId: null, userId: null });
             navigate("/auth", { replace: true });
             return null;
         }
 
-        const { accessToken } = await refreshRes.json();
-        setAuth({ accessToken });
+        const { accessToken, sessionId, userId } = await refreshRes.json();
+        setAuth({ accessToken, sessionId, userId });
 
         // 원래 요청 재시도
         return fetch(url, {

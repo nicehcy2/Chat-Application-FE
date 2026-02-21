@@ -32,9 +32,9 @@ export default function Login() {
         throw new Error("login failed");
       }
 
-      const { accessToken, sessionId } = await res.json(); // { accessToken, userId }
+      const { accessToken, sessionId, userId } = await res.json(); // { accessToken, userId }
 
-      setAuth({ accessToken, sessionId }); // chats에서 사용할 인증 값
+      setAuth({ accessToken, sessionId, userId }); // chats에서 사용할 인증 값
 
       navigate("/chats");
     } catch (error) {
