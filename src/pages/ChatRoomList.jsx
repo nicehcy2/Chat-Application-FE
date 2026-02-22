@@ -33,7 +33,7 @@ const chatRoomList = [
     updatedAt: "어제",
   },
   {
-    chatRoomId: 3,
+    chatRoomId: 4,
     chatRoomTitle: "피어나 모여!",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙
@@ -43,7 +43,7 @@ const chatRoomList = [
     updatedAt: "어제",
   },
   {
-    chatRoomId: 3,
+    chatRoomId: 5,
     chatRoomTitle: "피어나 모여!",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙
@@ -53,7 +53,7 @@ const chatRoomList = [
     updatedAt: "어제",
   },
   {
-    chatRoomId: 3,
+    chatRoomId: 6,
     chatRoomTitle: "피어나 모여!",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙
@@ -63,7 +63,7 @@ const chatRoomList = [
     updatedAt: "어제",
   },
   {
-    chatRoomId: 3,
+    chatRoomId: 7,
     chatRoomTitle: "피어나 모여!!",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙
@@ -73,7 +73,7 @@ const chatRoomList = [
     updatedAt: "어제",
   },
   {
-    chatRoomId: 3,
+    chatRoomId: 8,
     chatRoomTitle: "피어나 모여!!!",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙
@@ -83,7 +83,7 @@ const chatRoomList = [
     updatedAt: "어제",
   },
   {
-    chatRoomId: 3,
+    chatRoomId: 9,
     chatRoomTitle: "피어나 모여!!!!!!",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙
@@ -93,7 +93,7 @@ const chatRoomList = [
     updatedAt: "어제",
   },
   {
-    chatRoomId: 3,
+    chatRoomId: 10,
     chatRoomTitle: "피어나 모여!",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙
@@ -103,7 +103,7 @@ const chatRoomList = [
     updatedAt: "어제",
   },
   {
-    chatRoomId: 3,
+    chatRoomId: 11,
     chatRoomTitle: "피어나 모여!",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙
@@ -113,7 +113,7 @@ const chatRoomList = [
     updatedAt: "어제",
   },
   {
-    chatRoomId: 3,
+    chatRoomId: 12,
     chatRoomTitle: "피어나 모여!",
     chatRoomThumbnail: "image.com", // 이미지 S3 주소
     chatRoomRule: "string", // 채팅방 규칙

@@ -6,7 +6,7 @@ import BackButton from "../components/BackButton";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { setAuth } = useAuth();
+  const { setAuth, connectWebSocket } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,6 +35,7 @@ export default function Login() {
       const { accessToken, sessionId, userId } = await res.json(); // { accessToken, userId }
 
       setAuth({ accessToken, sessionId, userId }); // chats에서 사용할 인증 값
+      connectWebSocket(accessToken); // 로그인 시점에 연결
 
       navigate("/chats");
     } catch (error) {

@@ -1,4 +1,3 @@
-import { Stomp } from "@stomp/stompjs";
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,10 +9,9 @@ import ChatRankButtonImage from "../assets/images/chat-rank.png";
 import ChatOptionImage from "../assets/images/chat-option.png";
 
 export default function Chat() {
-  const stompClient = useRef(null); // WebSocket 연결 객체
   const bottomRef = useRef(null);
   const navigate = useNavigate();
-  const { auth, setAuth } = useAuth(); // { accessToken, userId }
+  const { auth, subscribe, publish } = useAuth(); // { accessToken, userId }
   const authFetch = useAuthFetch(); // 요청 할 때 401 뜨면 refresh
 
   const [messages, setMessages] = useState([]); // 메시지 저장 상태
@@ -22,95 +20,18 @@ export default function Chat() {
   const [chatRoomTitle, setChatRoomTitle] = useState("");
   const [participationCount, setParticipationCount] = useState("");
 
-  const WEBSOCKET_URL = "ws://localhost:8080/ws";
   const GATEWAY_SERVER_URL = "http://localhost:8072";
   const CHAT_APISERVER_URL = "/chat-api-service";
 
-  // WebSocket 연결 설정
-  const connect = async () => {
-
-    // WebSocket 연결 전에 토큰 갱신
-    const refreshRes = await fetch(`${GATEWAY_SERVER_URL}/user-service/refresh`, {
-        method: "POST",
-        credentials: "include",
-    });
-
-    if (!refreshRes.ok) {
-        navigate("/auth", { replace: true });
-        return;
-    }
-
-    const { accessToken, sessionId, userId } = await refreshRes.json();
-    setAuth({ accessToken, sessionId, userId });
-
-    const socket = new WebSocket(WEBSOCKET_URL);
-    stompClient.current = Stomp.over(socket); // Stomp 클라이언트 생성
-
-    // 로그인 때 저장해준 JWT 토큰 가져오기
-
-    stompClient.current.connect(
-      {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      () => {
-        console.log("Connected to WebSocket server!");
-
-        // 구독: 서버에서 전송하는 메시지를 수신
-        stompClient.current.subscribe(
-          `/sub/chatroom${chatRoomId}`,
-          (message) => {
-            const newMessage = JSON.parse(message.body);
-            setMessages((prevMessages) => [...prevMessages, newMessage]);
-          },
-        );
-
-        /*
-      stompClient.current.subscribe(`/topic/read.room.${chatRoomId}`, (message) => {
-        const newMessage = JSON.parse(message.body);
-        console.log("Received Read Message:", newMessage);
-      });
-
-      stompClient.current.subscribe(`/topic/setting.room.${chatRoomId}`, (message) => {
-        const newMessage = JSON.parse(message.body);
-        console.log("Received Setting Message:", newMessage);
-      });
-      */
-      },
-    );
-  };
-
-  const updateTimestamp = (messageId, newTimestamp) => {
-    setMessages((prevMessages) =>
-      prevMessages.map((msg) =>
-        msg.id === messageId ? { ...msg, timestamp: newTimestamp } : msg,
-      ),
-    );
-  };
-
-  // WebSocket 연결 해제
-  const disconnect = () => {
-    if (stompClient.current) {
-      stompClient.current.disconnect(() => {
-        console.log("Disconnected from WebSocket server.");
-      });
-    }
-  };
-
   // 메시지 전송
   const sendMessage = () => {
-    if (stompClient.current && inputValue) {
-      const message = {
-        messageType: "MESSAGE",
-        content: inputValue,
-        chatRoomId: chatRoomId,
-        senderId: auth.userId, //senderId
-      };
-      stompClient.current.send(
-        `/pub/chat.message.${chatRoomId}`,
-        {},
-        JSON.stringify(message),
-      );
-      setInputValue(""); // 입력 필드 초기화
+    if (inputValue && publish(`/pub/chat.message.${chatRoomId}`, {
+      messageType: "MESSAGE",
+      content: inputValue,
+      chatRoomId: chatRoomId,
+      senderId: auth.userId,
+    })) {
+      setInputValue("");
     }
   };
 
@@ -139,9 +60,12 @@ export default function Chat() {
 
   // React 컴포넌트가 렌더링될 때 WebSocket 연결
   useEffect(() => {
-    connect();
+    const subscription = subscribe(`/sub/chatroom${chatRoomId}`, (message) => {
+      const newMessage = JSON.parse(message.body);
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    });
     fetchMessages(); // 기존 메시지 가져오기
-    return () => disconnect(); // 컴포넌트가 언마운트될 때 연결 해제
+    return () => subscription?.unsubscribe(); // 컴포넌트가 언마운트될 때 연결 해제
   }, [chatRoomId]);
 
   useEffect(() => {
@@ -184,13 +108,16 @@ export default function Chat() {
           {messages.map((msg, index) => {
             const isMyMessage = msg.senderId === auth.userId;
             const showProfile =
-              !isMyMessage && (index === 0 || messages[index - 1].senderId !== msg.senderId);
+              !isMyMessage &&
+              (index === 0 || messages[index - 1].senderId !== msg.senderId);
 
             const timestamp = (
               <div className="flex flex-col justify-end">
                 {/* TODO: msg 타입에 따라서 형식 다르게 하기 */}
                 {/* TODO: 날짜 텍스트 만들기(날짜 변경 후 첫번째 채팅이 오면 그 위에 적용) */}
-                <div className="text-[#5B3FE7] text-[9px] leading-none">{msg.unreadCount}</div>
+                <div className="text-[#5B3FE7] text-[9px] leading-none">
+                  {msg.unreadCount}
+                </div>
                 <div className="text-[9px]">
                   {new Date(msg.timestamp).toLocaleTimeString("ko-KR", {
                     hour: "2-digit",
@@ -207,21 +134,28 @@ export default function Chat() {
                 className={`flex gap-2 ${showProfile && index !== 0 ? "mt-3" : "mt-1"} ${isMyMessage ? "justify-end" : ""}`}
               >
                 {/* Profile Image - 내 메시지면 숨김 */}
-                {!isMyMessage && (
-                  showProfile
-                    ? <div className="w-12 h-12 border rounded-2xl bg-red-400 shrink-0"></div>
-                    : <div className="w-12 shrink-0"></div>
-                )}
+                {!isMyMessage &&
+                  (showProfile ? (
+                    <div className="w-12 h-12 border rounded-2xl bg-red-400 shrink-0"></div>
+                  ) : (
+                    <div className="w-12 shrink-0"></div>
+                  ))}
 
                 <div className="flex flex-col gap-1 text-sm">
                   {/* User Name - 내 메시지면 숨김 */}
-                  {showProfile && <div><strong>{msg.senderId}</strong></div>}
+                  {showProfile && (
+                    <div>
+                      <strong>{msg.senderId}</strong>
+                    </div>
+                  )}
 
                   <div className="flex flex-row gap-2">
                     {/* 내 메시지면 timestamp가 버블 왼쪽 */}
                     {isMyMessage && timestamp}
                     {/* Message Content */}
-                    <div className={`px-3 py-2 border rounded-xl max-w-[300px] text-[16px] ${isMyMessage ? "bg-[#5B3FE7] text-white" : "bg-gray-50"}`}>
+                    <div
+                      className={`px-3 py-2 border rounded-xl max-w-[300px] text-[16px] ${isMyMessage ? "bg-[#5B3FE7] text-white" : "bg-gray-50"}`}
+                    >
                       {msg.content}
                     </div>
                     {/* 상대 메시지면 timestamp가 버블 오른쪽 */}
