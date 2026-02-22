@@ -13,7 +13,7 @@ export default function Chat() {
   const stompClient = useRef(null); // WebSocket 연결 객체
   const bottomRef = useRef(null);
   const navigate = useNavigate();
-  const { auth } = useAuth(); // { accessToken, userId }
+  const { auth, setAuth } = useAuth(); // { accessToken, userId }
   const authFetch = useAuthFetch(); // 요청 할 때 401 뜨면 refresh
 
   const [messages, setMessages] = useState([]); // 메시지 저장 상태
@@ -27,15 +27,30 @@ export default function Chat() {
   const CHAT_APISERVER_URL = "/chat-api-service";
 
   // WebSocket 연결 설정
-  const connect = () => {
+  const connect = async () => {
+
+    // WebSocket 연결 전에 토큰 갱신
+    const refreshRes = await fetch(`${GATEWAY_SERVER_URL}/user-service/refresh`, {
+        method: "POST",
+        credentials: "include",
+    });
+
+    if (!refreshRes.ok) {
+        navigate("/auth", { replace: true });
+        return;
+    }
+
+    const { accessToken, sessionId, userId } = await refreshRes.json();
+    setAuth({ accessToken, sessionId, userId });
+
     const socket = new WebSocket(WEBSOCKET_URL);
     stompClient.current = Stomp.over(socket); // Stomp 클라이언트 생성
 
-    // 로그인 떄 저장해준 JWT 토큰 가져오기
+    // 로그인 때 저장해준 JWT 토큰 가져오기
 
     stompClient.current.connect(
       {
-        Authorization: `Bearer ${auth.accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       () => {
         console.log("Connected to WebSocket server!");
@@ -87,7 +102,7 @@ export default function Chat() {
       const message = {
         messageType: "MESSAGE",
         content: inputValue,
-        chatRoomId: 1, //chatRoomId,
+        chatRoomId: chatRoomId,
         senderId: auth.userId, //senderId
       };
       stompClient.current.send(
@@ -98,50 +113,6 @@ export default function Chat() {
       setInputValue(""); // 입력 필드 초기화
     }
   };
-
-  const sendReadMessage = () => {
-    // 예시 메시지 ID 리스트
-    const recentMessageId = "680396718903552615";
-    const lastMessageId = "680396669926664543";
-
-    // 읽은 메시지 DTO 생성
-    const readMessageRequestDto = {
-      lastClientMessageId: lastMessageId,
-      recentClientMessageId: recentMessageId,
-    };
-
-    stompClient.current.send(
-      `/pub/read.message.${chatRoomId}`,
-      {},
-      JSON.stringify(readMessageRequestDto),
-    );
-  };
-
-  // 기존 채팅 메시지 가져오기
-  /*
-  const fetchMessages = async () => {
-    try {
-      const response = await fetch(
-        `${GATEWAY_SERVER_URL}${CHAT_APISERVER_URL}/api/chats/${chatRoomId}/messages/test`,
-        {
-          headers: {
-            Authorization: `Bearer ${auth.accessToken}`,
-            Accept: "application/json",
-          },
-          credentials: "include", // refresh token 쿠키 쓰면 유지
-        },
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data); // 기존 메시지 설정
-        console.log("fetch successed.");
-      } else {
-        console.error("Failed to fetch messages:", response.status);
-      }
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  };*/
 
   const fetchMessages = async () => {
     try {
@@ -168,8 +139,8 @@ export default function Chat() {
 
   // React 컴포넌트가 렌더링될 때 WebSocket 연결
   useEffect(() => {
-    fetchMessages(); // 기존 메시지 가져오기
     connect();
+    fetchMessages(); // 기존 메시지 가져오기
     return () => disconnect(); // 컴포넌트가 언마운트될 때 연결 해제
   }, [chatRoomId]);
 
@@ -211,56 +182,50 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto">
         <div className="p-3">
           {messages.map((msg, index) => {
+            const isMyMessage = msg.senderId === auth.userId;
             const showProfile =
-              index == 0 || messages[index - 1].senderId !== msg.senderId;
+              !isMyMessage && (index === 0 || messages[index - 1].senderId !== msg.senderId);
 
-            {
-              /* TODO: 내 채팅이면 프로필 삭제 + 수직축 정렬 역순으로 */
-            }
+            const timestamp = (
+              <div className="flex flex-col justify-end">
+                {/* TODO: msg 타입에 따라서 형식 다르게 하기 */}
+                {/* TODO: 날짜 텍스트 만들기(날짜 변경 후 첫번째 채팅이 오면 그 위에 적용) */}
+                <div className="text-[#5B3FE7] text-[9px] leading-none">{msg.unreadCount}</div>
+                <div className="text-[9px]">
+                  {new Date(msg.timestamp).toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  })}
+                </div>
+              </div>
+            );
+
             return (
               <div
-                className={`flex gap-2 ${
-                  showProfile && index !== 0 ? "mt-3" : "mt-0"
-                }`}
+                key={msg.id}
+                className={`flex gap-2 ${showProfile && index !== 0 ? "mt-3" : "mt-1"} ${isMyMessage ? "justify-end" : ""}`}
               >
-                {/* Profile Image */}
-                {showProfile ? (
-                  <div className="w-12 h-12 border rounded-full bg-red-400"></div>
-                ) : (
-                  <div className="w-12"></div>
+                {/* Profile Image - 내 메시지면 숨김 */}
+                {!isMyMessage && (
+                  showProfile
+                    ? <div className="w-12 h-12 border rounded-2xl bg-red-400 shrink-0"></div>
+                    : <div className="w-12 shrink-0"></div>
                 )}
 
                 <div className="flex flex-col gap-1 text-sm">
-                  {/* User Name */}
-                  {showProfile ? (
-                    <div key={index}>
-                      <strong>{msg.senderId}</strong>
-                    </div>
-                  ) : (
-                    <div key={index}></div>
-                  )}
+                  {/* User Name - 내 메시지면 숨김 */}
+                  {showProfile && <div><strong>{msg.senderId}</strong></div>}
 
                   <div className="flex flex-row gap-2">
+                    {/* 내 메시지면 timestamp가 버블 왼쪽 */}
+                    {isMyMessage && timestamp}
                     {/* Message Content */}
-                    <div className="px-3 py-2 border rounded-xl bg-gray-50 max-w-[300px] text-[16px]">
+                    <div className={`px-3 py-2 border rounded-xl max-w-[300px] text-[16px] ${isMyMessage ? "bg-[#5B3FE7] text-white" : "bg-gray-50"}`}>
                       {msg.content}
                     </div>
-                    <div className="flex flex-col justify-end">
-                      {/* unread count */}
-                      <div className="text-[#5B3FE7] text-[9px] leading-none">
-                        {/* TODO: msg 타입에 따라서 형식 다르게 하기 */}
-                        {/* TODO: 날짜 텍스트 만들기(날짜 변경 후 첫번째 채팅이 오면 그 위에 적용) */}
-                        {msg.unreadCount}
-                      </div>
-                      {/* timestamp */}
-                      <div className="text-[9px]">
-                        {new Date(msg.timestamp).toLocaleTimeString("ko-KR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        })}
-                      </div>
-                    </div>
+                    {/* 상대 메시지면 timestamp가 버블 오른쪽 */}
+                    {!isMyMessage && timestamp}
                   </div>
                 </div>
               </div>
