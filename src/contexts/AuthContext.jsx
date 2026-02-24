@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true); // loading으로 refresh가 호출되기 전에 auth로 넘어가는 것을 막음.
   const stompClient = useRef(null);
 
-  const WEBSOCKET_URL = "ws://localhost:8080/ws";
+  const WEBSOCKET_URL = "ws://localhost:80/ws";
   const GATEWAY_SERVER_URL = "http://localhost:8072";
   const REFRESH_URL = "/user-service/refresh";
 
