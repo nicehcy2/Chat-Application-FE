@@ -46,7 +46,7 @@ function NavigationBar() {
       </div>
       <div
         className="flex flex-col items-center gap-[0.8px] font-sans text-sm"
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/mypage")}
       >
         <img
           src={UserImage}

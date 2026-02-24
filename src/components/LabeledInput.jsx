@@ -1,4 +1,4 @@
-export default function LabeledInput({ label, value, onChange, maxLength, placeholder = "", error }) {
+export default function LabeledInput({ label, value, onChange, maxLength, placeholder = "", error, type = "text" }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-xl text-[#583FE7] font-bold tracking-[-0.08em]">
@@ -6,7 +6,7 @@ export default function LabeledInput({ label, value, onChange, maxLength, placeh
       </p>
       <div className="relative">
         <input
-          type="text"
+          type={type}
           maxLength={maxLength}
           placeholder={placeholder}
           value={value}

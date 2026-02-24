@@ -58,7 +58,7 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="이메일을 입력해주세요."
+              placeholder="이메일을 입력해주세요. ex) admin@naver.com"
               className="border border-black/30 rounded-xl p-3 outline-none"
               autoComplete="email"
             />
@@ -66,7 +66,7 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="전화번호를 입력해주세요."
+              placeholder="비밀번호를 입력해주세요. ex) admin"
               className="border border-black/30 rounded-xl p-3 outline-none"
               autoComplete="current-password"
             />

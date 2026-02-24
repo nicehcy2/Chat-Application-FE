@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthPage from "./pages/AuthPage";
+import MyPage from "./pages/MyPage";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/chats/:chatRoomId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/mypage" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
         </Routes>
       </IphoneLayout>
     </BrowserRouter>
