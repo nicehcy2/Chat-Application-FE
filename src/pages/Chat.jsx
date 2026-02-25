@@ -8,6 +8,9 @@ import BackButtonImage from "../assets/images/back-button.png";
 import ChatRankButtonImage from "../assets/images/chat-rank.png";
 import ChatOptionImage from "../assets/images/chat-option.png";
 
+const GATEWAY_SERVER_URL = "http://localhost:8072";
+const CHAT_APISERVER_URL = "/chat-api-service";
+
 export default function Chat() {
   const bottomRef = useRef(null);
   const navigate = useNavigate();
@@ -19,9 +22,6 @@ export default function Chat() {
   const { chatRoomId } = useParams(); // 채팅방 ID
   const [chatRoomTitle, setChatRoomTitle] = useState("");
   const [participationCount, setParticipationCount] = useState("");
-
-  const GATEWAY_SERVER_URL = "http://localhost:8072";
-  const CHAT_APISERVER_URL = "/chat-api-service";
 
   // 메시지 전송
   const sendMessage = () => {

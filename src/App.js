@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthPage from "./pages/AuthPage";
 import MyPage from "./pages/MyPage";
+import EditProfile from "./pages/EditProfile";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypage/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         </Routes>
       </IphoneLayout>
     </BrowserRouter>

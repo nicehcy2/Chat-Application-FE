@@ -5,6 +5,14 @@ import LabeledInput from "../components/LabeledInput";
 import LabeledSelect from "../components/LabeledSelect";
 import CompleteButton from "../components/CompleteButton";
 
+const maxNicknameLen = 20;
+const maxEmailLen = 100;
+const maxPasswordLen = 20;
+
+const GATEWAY_SERVER_URL = "http://localhost:8072";
+const REGISTER_URL = "/user-service/signup";
+
+
 export default function Register() {
 
     const navigate = useNavigate();
@@ -20,13 +28,7 @@ export default function Register() {
     const [emailError, setEmailError] = useState("");
     const [emailChecked, setEmailChecked] = useState(false);
     const [passwordError, setPasswordError] = useState("");
-    const maxNicknameLen = 20;
-    const maxEmailLen = 100;
-    const maxPasswordLen = 20;
-
-    const GATEWAY_SERVER_URL = "http://localhost:8072";
-    const REGISTER_URL = "/user-service/signup";
-
+    
     const handleEmailCheck = async () => {
         if (!email) {
             setEmailError("이메일을 입력해주세요.");

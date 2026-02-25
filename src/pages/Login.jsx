@@ -4,14 +4,14 @@ import { useAuth } from "../contexts/AuthContext"
 import CompleteButton from "../components/CompleteButton";
 import BackButton from "../components/BackButton";
 
+const URL = "http://localhost:8072/user-service/login";
+
 export default function Login() {
   const navigate = useNavigate();
   const { setAuth, connectWebSocket } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const URL = "http://localhost:8072/user-service/login";
 
   const handleSubmit = async (e) => {
 

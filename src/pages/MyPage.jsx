@@ -1,12 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../assets/images/logo.png"
 import GoldImage from "../assets/images/gold.png"
+import { useAuth } from "../contexts/AuthContext";
+import { useAuthFetch } from "../hooks/useAuthFetch";
+
+const USER_INFO_URL = "http://localhost:8072/user-service/users";
 
 export default function MyPage() {
 
-    const [user, setUser] = useState("");
+    const [user, setUser] = useState({});
+    const { auth } = useAuth();
+    const authFetch = useAuthFetch();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const response = await authFetch(`${USER_INFO_URL}/${auth.userId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setUser(data);
+                } else {
+                    console.error("유저 정보 조회 실패:", response.status);
+                }
+            } catch (error) {
+                console.error("유저 정보 조회 에러:", error);
+            }
+        };
+        fetchUser();
+    }, [auth.userId]);
 
     return (
         <div className="flex flex-col gap-4 bg-gray-100">
@@ -21,7 +44,8 @@ export default function MyPage() {
                         <p className="text-sm text-[#583FE7]">{user.ageGroup ?? 'null'} · {user.jobGroup ?? 'null'}</p>
                         <p className="text-sm text-gray-500">{user.email ?? 'null'}</p>
                     </div>
-                    <button className="mt-1 w-full py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 tracking-[-0.06em]">
+                    <button className="mt-1 w-full py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 tracking-[-0.06em]" 
+                        onClick={() => navigate('/mypage/edit')}>
                         프로필 수정
                     </button>
                 </div>
@@ -33,7 +57,7 @@ export default function MyPage() {
                 </div>
                 <div className="flex flex-row justify-between">
                     <div className="flex flex-col justify-center items-center border rounded-lg px-7 py-4 gap-2">
-                        <p className="text-lg font-bold text-[#583FE7]">{user.targetMoney ?? '-'}원</p>
+                        <p className="text-lg font-bold text-[#583FE7]">{user.dayTargetExpenditure ?? '-'}원</p>
                         <p className="text-xs">일일 목표 지출 한도</p>
                     </div>
                     <div className="flex flex-col justify-center items-center border rounded-lg px-6 py-4 gap-2">
