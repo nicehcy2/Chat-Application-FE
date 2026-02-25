@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AuthPage from "./pages/AuthPage";
 import MyPage from "./pages/MyPage";
 import EditProfile from "./pages/EditProfile";
+import ChatRoomeExplore from "./pages/ChatRoomExplore";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/auth" element={<AuthPage />}/>
           <Route path="/chats" element={<ProtectedRoute><ChatRoomList /></ProtectedRoute>}/>
           <Route path="/chats/:chatRoomId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="/chats/explore" element={<ProtectedRoute><ChatRoomeExplore /></ProtectedRoute>} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/mypage" element={<MyPage />} />
