@@ -8,8 +8,8 @@ import { useAuth } from "../contexts/AuthContext";
 
 const GENDER_OPTIONS = ["여자", "남자"];
 const AGE_OPTIONS = ["14~19세", "20대", "30대", "40대", "50대", "60대 이상"];
-const JOB_OPTIONS = ["대학(원)생", "직장인", "주부", "자영업자"];
-const SAVE_PROFILE_URL = "http://localhost:8072/user-service/profile/edit";
+const JOB_OPTIONS = ["학생", "직장인", "주부", "자영업자"];
+const SAVE_PROFILE_URL = "http://localhost:8072/user-service/users/profile/edit";
 
 export default function EditProfile() {
   const [nickname, setNickname] = useState("");
@@ -23,18 +23,38 @@ export default function EditProfile() {
 
   const saveEditProfile = async () => {
 
+    const genderCode = gender === "남자" ? "M" : gender === "여자" ? "W" : "UNDECIDED";
+
+    const ageGroupMap = {
+        "14~19세": "TEENAGER",
+        "20대": "TWENTIES",
+        "30대": "THIRTIES",
+        "40대": "FORTIES",
+        "50대": "FIFTIES",
+        "60대 이상": "SIXTIES_AND_ABOVE",
+    };
+
+    const jobGroupMap = {
+        "학생": "STUDENT",
+        "직장인": "EMPLOYEE",
+        "주부": "HOMEMAKER",
+        "자영업자": "SELF_EMPLOYED",
+    };
+
     try {
+      console.log(jobGroupMap[job]);
       const response = await authFetch(
-        `${SAVE_PROFILE_URL}`,
+        `${SAVE_PROFILE_URL}?userId=${auth.userId}`,
         {
+          method: "PATCH",
           headers: {
-            Authorization: `Bearer ${auth.accessToken}`,
-            Accept: "application/json",
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({ nickname, gender:genderCode, ageGroup: ageGroupMap[age], jobGroup: jobGroupMap[job], imageUrl: "image.jpg" }),
         },
       );
       if (response.ok) {
-        navigate("/profile");
+        navigate("/mypage");
         console.log("프로필 저장 성공");
       } else {
         console.error("프로필 저장 실패:", response.status);
