@@ -22,7 +22,7 @@ function App() {
           <Route path="/chats/:chatRoomId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/mypage" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
+          <Route path="/mypage" element={<MyPage />} />
         </Routes>
       </IphoneLayout>
     </BrowserRouter>
