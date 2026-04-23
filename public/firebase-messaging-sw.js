@@ -1,14 +1,18 @@
+/* eslint-env serviceworker */
 importScripts('https://www.gstatic.com/firebasejs/12.12.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/12.12.1/firebase-messaging-compat.js');
 
-// 서비스 워커에서는 process.env를 쓸 수 없으므로 직접 값 입력
+// URL 파라미터로 전달받은 env 값으로 초기화 (process.env 사용 불가)
+/* eslint-disable no-restricted-globals */
+const params = new URL(self.location.href).searchParams;
+
 firebase.initializeApp({
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_AUTH_DOMAIN',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_STORAGE_BUCKET',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId: 'YOUR_APP_ID',
+  apiKey: params.get('apiKey'),
+  authDomain: params.get('authDomain'),
+  projectId: params.get('projectId'),
+  storageBucket: params.get('storageBucket'),
+  messagingSenderId: params.get('messagingSenderId'),
+  appId: params.get('appId'),
 });
 
 const messaging = firebase.messaging();

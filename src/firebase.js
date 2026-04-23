@@ -32,11 +32,24 @@ export const requestFcmToken = async () => {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return null;
 
+    // sw에 env 값을 URL 파라미터로 전달 (sw는 process.env를 읽을 수 없기 때문)
+    const swUrl = new URL('/firebase-messaging-sw.js', window.location.origin);
+    swUrl.searchParams.set('apiKey', process.env.REACT_APP_FIREBASE_API_KEY);
+    swUrl.searchParams.set('authDomain', process.env.REACT_APP_FIREBASE_AUTH_DOMAIN);
+    swUrl.searchParams.set('projectId', process.env.REACT_APP_FIREBASE_PROJECT_ID);
+    swUrl.searchParams.set('storageBucket', process.env.REACT_APP_FIREBASE_STORAGE_BUCKET);
+    swUrl.searchParams.set('messagingSenderId', process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID);
+    swUrl.searchParams.set('appId', process.env.REACT_APP_FIREBASE_APP_ID);
+
+    const registration = await navigator.serviceWorker.register(swUrl.toString());
+
     // VAPID 키: Firebase Console > 클라우드 메시징 > 웹 푸시 인증서에서 발급
     // FCM 서버가 이 키로 해당 앱에서 발급한 토큰임을 검증
     const token = await getToken(messaging, {
       vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: registration,
     });
+    console.log('FCM Token:', token);
     return token;
   } catch (error) {
     console.error('FCM 토큰 발급 실패:', error);

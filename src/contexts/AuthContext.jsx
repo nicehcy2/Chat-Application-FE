@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Stomp } from "@stomp/stompjs";
+import { requestFcmToken } from "../firebase";
 
 const AuthContext = createContext(); // 전역으로 공유할 수 있는 파이프를 만드는 함수
 
@@ -15,6 +16,20 @@ export const AuthProvider = ({ children }) => {
   const WEBSOCKET_URL = "ws://localhost:80/ws"; // nginx로 연결
   const GATEWAY_SERVER_URL = "http://localhost:8072";
   const REFRESH_URL = "/user-service/refresh";
+  const FCM_TOKEN_URL = "/user-service/api/v1/users/fcm/token";
+
+  const registerFcmToken = async (accessToken, userId) => {
+    const token = await requestFcmToken();
+    if (!token) return;
+    fetch(`${GATEWAY_SERVER_URL}${FCM_TOKEN_URL}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ fcmToken: token, deviceType: "DESKTOP", userId }),
+    });
+  };
 
   const connectWebSocket = (accessToken) => {
     if (stompClient.current?.connected) return; // 이미 연결되어 있으면 스킵
@@ -61,6 +76,7 @@ export const AuthProvider = ({ children }) => {
       .then(({ accessToken, sessionId, userId }) => {
         setAuth({ accessToken, sessionId, userId });
         connectWebSocket(accessToken);
+        registerFcmToken(accessToken, userId);
       })
       .catch(() => {})
       .finally(() => setLoading(false)); // loading 값이 바뀌면서 재렌더링.
