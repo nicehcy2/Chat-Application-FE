@@ -42,7 +42,7 @@ export default function MyPage() {
                 <div className="flex flex-1 flex-col gap-1">
                     <div>
                         <p className="text-xl font-bold tracking-[-0.06em]">{user.nickname ?? 'null'}</p>
-                        <p className="text-sm text-[#583FE7]">{user.ageGroup ?? 'null'} · {user.jobGroup ?? 'null'}</p>
+                        <p className="text-sm text-primary">{user.ageGroup ?? 'null'} · {user.jobGroup ?? 'null'}</p>
                         <p className="text-sm text-gray-500">{user.email ?? 'null'}</p>
                     </div>
                     <button className="mt-1 w-full py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 tracking-[-0.06em]" 
@@ -58,11 +58,11 @@ export default function MyPage() {
                 </div>
                 <div className="flex flex-row justify-between">
                     <div className="flex flex-col justify-center items-center border rounded-lg px-7 py-4 gap-2">
-                        <p className="text-lg font-bold text-[#583FE7]">{user.dayTargetExpenditure ?? '-'}원</p>
+                        <p className="text-lg font-bold text-primary">{user.dayTargetExpenditure ?? '-'}원</p>
                         <p className="text-xs">일일 목표 지출 한도</p>
                     </div>
                     <div className="flex flex-col justify-center items-center border rounded-lg px-6 py-4 gap-2">
-                        <p className="text-lg font-bold  text-[#583FE7]">{user.targetRate ?? '-'}%</p>
+                        <p className="text-lg font-bold  text-primary">{user.targetRate ?? '-'}%</p>
                         <p className="text-xs">일주일 기준 목표달성률</p>
                     </div>
                 </div>
@@ -74,7 +74,7 @@ export default function MyPage() {
                         src={GoldImage}
                         alt="gold"
                     />  
-                    <p className="text-lg font-bold text-[#583FE7]">{user.reward ?? 0}</p>
+                    <p className="text-lg font-bold text-primary">{user.reward ?? 0}</p>
                 </div>
             </div>
             <div className="flex flex-col bg-white px-4 py-4 gap-6">

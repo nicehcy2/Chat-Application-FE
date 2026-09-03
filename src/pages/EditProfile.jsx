@@ -72,7 +72,7 @@ export default function EditProfile() {
             <BackButton />
             <p className="text-xl tracking-[-0.06em]">프로필 수정</p>
           </div>
-          <button className="font-bold text-[#583FE7]"
+          <button className="font-bold text-primary"
             onClick={saveEditProfile}>저장</button>
         </div>
         <div className="flex flex-col gap-8">

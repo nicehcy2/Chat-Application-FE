@@ -1,7 +1,7 @@
 export default function LabeledInput({ label, value, onChange, maxLength, placeholder = "", error, type = "text" }) {
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-xl text-[#583FE7] font-bold tracking-[-0.08em]">
+      <p className="text-xl text-primary font-bold tracking-[-0.08em]">
         {label} {error && <span className="text-red-500 text-sm font-normal">{error}</span>}
       </p>
       <div className="relative">

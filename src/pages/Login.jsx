@@ -52,7 +52,7 @@ export default function Login() {
       <div className="flex flex-col px-4 justify-center h-full gap-8 pb-20">
         <form onSubmit={handleSubmit} className="flex flex-col gap-12">
           <div className="flex flex-col gap-4">
-            <p className="text-2xl text-[#583FE7] font-bold tracking-[-0.08em]">
+            <p className="text-2xl text-primary font-bold tracking-[-0.08em]">
               로그인
             </p>
             <input
@@ -78,7 +78,7 @@ export default function Login() {
           <CompleteButton label="로그인" />
         </form>
         <p className="text-xs text-center text-gray-500">아직 회원이 아니신가요?{" "} 
-          <Link to="/register" className="text-[#583FE7] font-bold">
+          <Link to="/register" className="text-primary font-bold">
             회원가입
           </Link>
           </p>

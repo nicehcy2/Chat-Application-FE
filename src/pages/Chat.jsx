@@ -86,7 +86,7 @@ export default function Chat() {
           <span className="text-xl font-bold px-2">
             {chatRoomTitle}무지출이 대세다
           </span>
-          <span className="text-sm font-bold text-[#3C19B0]">
+          <span className="text-sm font-bold text-primary-dark">
             {participationCount}35
           </span>
         </div>
@@ -116,7 +116,7 @@ export default function Chat() {
               <div className="flex flex-col justify-end">
                 {/* TODO: msg 타입에 따라서 형식 다르게 하기 */}
                 {/* TODO: 날짜 텍스트 만들기(날짜 변경 후 첫번째 채팅이 오면 그 위에 적용) */}
-                <div className="text-[#5B3FE7] text-[9px] leading-none">
+                <div className="text-primary text-[9px] leading-none">
                   {msg.unreadCount}
                 </div>
                 <div className="text-[9px]">
@@ -155,7 +155,7 @@ export default function Chat() {
                     {isMyMessage && timestamp}
                     {/* Message Content */}
                     <div
-                      className={`px-3 py-2 border rounded-xl max-w-[300px] text-[16px] ${isMyMessage ? "bg-[#5B3FE7] text-white" : "bg-gray-50"}`}
+                      className={`px-3 py-2 border rounded-xl max-w-[300px] text-[16px] ${isMyMessage ? "bg-primary text-white" : "bg-gray-50"}`}
                     >
                       {msg.content}
                     </div>
