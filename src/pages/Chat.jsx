@@ -7,8 +7,8 @@ import SendButtonImage from "../assets/images/chat-send-button.png";
 import BackButtonImage from "../assets/images/back-button.png";
 import ChatRankButtonImage from "../assets/images/chat-rank.png";
 import ChatOptionImage from "../assets/images/chat-option.png";
+import { GATEWAY_SERVER_URL } from "../config";
 
-const GATEWAY_SERVER_URL = "http://localhost:8072";
 const CHAT_APISERVER_URL = "/chat-api-service";
 
 export default function Chat() {
@@ -26,10 +26,11 @@ export default function Chat() {
   // 메시지 전송
   const sendMessage = () => {
     if (inputValue && publish(`/pub/chat.message.${chatRoomId}`, {
-      messageType: "MESSAGE",
+      chatRoomId: Number(chatRoomId),
+      correlationId: crypto.randomUUID(), // 전송 확인용 클라이언트 생성 UUID
+      messageType: "TEXT",
       content: inputValue,
-      chatRoomId: chatRoomId,
-      senderId: auth.userId,
+      // senderId는 서버가 세션(JWT)의 userId로 채우므로 보내지 않는다
     })) {
       setInputValue("");
     }
@@ -130,7 +131,7 @@ export default function Chat() {
 
             return (
               <div
-                key={msg.id}
+                key={msg.messageTSID}
                 className={`flex gap-2 ${showProfile && index !== 0 ? "mt-3" : "mt-1"} ${isMyMessage ? "justify-end" : ""}`}
               >
                 {/* Profile Image - 내 메시지면 숨김 */}
