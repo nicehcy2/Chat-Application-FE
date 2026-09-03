@@ -1,6 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
-import './App.css';
 import Chat from './pages/Chat';
 import ChatRoomList from "./pages/ChatRoomList";
 import IphoneLayout from "./layouts/IphoneLayout";
