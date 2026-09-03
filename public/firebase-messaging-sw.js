@@ -18,7 +18,9 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // 백그라운드(앱 꺼져 있을 때) 알림 수신
+// 서버가 notification 페이로드를 보내므로 알림 표시는 SDK가 자동으로 처리한다.
+// 여기서 showNotification()을 호출하면 같은 알림이 두 번 뜬다.
+// 알림을 직접 그리려면 서버를 data-only 메시지로 바꿔야 한다.
 messaging.onBackgroundMessage((payload) => {
-  const { title, body } = payload.notification;
-  self.registration.showNotification(title, { body });
+  console.log('[SW] 백그라운드 메시지 수신:', payload);
 });

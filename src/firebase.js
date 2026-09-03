@@ -41,7 +41,10 @@ export const requestFcmToken = async () => {
     swUrl.searchParams.set('messagingSenderId', process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID);
     swUrl.searchParams.set('appId', process.env.REACT_APP_FIREBASE_APP_ID);
 
-    const registration = await navigator.serviceWorker.register(swUrl.toString());
+    await navigator.serviceWorker.register(swUrl.toString());
+    // register()는 등록 "시작"만 보장한다. 워커가 활성화되기 전에 푸시 구독을 시도하면
+    // "no active Service Worker" 에러가 나므로 활성화 완료까지 대기한다.
+    const registration = await navigator.serviceWorker.ready;
 
     // VAPID 키: Firebase Console > 클라우드 메시징 > 웹 푸시 인증서에서 발급
     // FCM 서버가 이 키로 해당 앱에서 발급한 토큰임을 검증
