@@ -2,8 +2,9 @@ import React, { use, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useAuthFetch } from "../hooks/useAuthFetch";
+import { GATEWAY_SERVER_URL } from "../config";
 
-const CHATROOM_LIST_URL = "http://localhost:8072/chat-api-service/api/chats?userId=";
+const CHATROOM_LIST_URL = `${GATEWAY_SERVER_URL}/chat-api-service/api/chats?userId=`;
 
 function ChatRoomList(props) {
   const navigate = useNavigate();

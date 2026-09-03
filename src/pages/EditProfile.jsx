@@ -5,11 +5,12 @@ import NicknameInput from "../components/NicknameInput";
 import { useAuthFetch } from "../hooks/useAuthFetch";
 import LabeledSelect from "../components/LabeledSelect";
 import { useAuth } from "../contexts/AuthContext";
+import { GATEWAY_SERVER_URL } from "../config";
 
 const GENDER_OPTIONS = ["여자", "남자"];
 const AGE_OPTIONS = ["14~19세", "20대", "30대", "40대", "50대", "60대 이상"];
 const JOB_OPTIONS = ["학생", "직장인", "주부", "자영업자"];
-const SAVE_PROFILE_URL = "http://localhost:8072/user-service/users/profile/edit";
+const SAVE_PROFILE_URL = `${GATEWAY_SERVER_URL}/user-service/users/profile/edit`;
 
 export default function EditProfile() {
   const [nickname, setNickname] = useState("");

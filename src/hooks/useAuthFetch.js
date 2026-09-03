@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-
-const GATEWAY_SERVER_URL = "http://localhost:8072";
+import { GATEWAY_SERVER_URL } from "../config";
 
 export function useAuthFetch() {
     const { auth, setAuth } = useAuth();

@@ -3,8 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext"
 import CompleteButton from "../components/CompleteButton";
 import BackButton from "../components/BackButton";
+import { GATEWAY_SERVER_URL } from "../config";
 
-const URL = "http://localhost:8072/user-service/login";
+const URL = `${GATEWAY_SERVER_URL}/user-service/login`;
 
 export default function Login() {
   const navigate = useNavigate();

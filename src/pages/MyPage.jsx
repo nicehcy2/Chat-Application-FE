@@ -4,8 +4,9 @@ import Logo from "../assets/images/logo.png"
 import GoldImage from "../assets/images/gold.png"
 import { useAuth } from "../contexts/AuthContext";
 import { useAuthFetch } from "../hooks/useAuthFetch";
+import { GATEWAY_SERVER_URL } from "../config";
 
-const USER_INFO_URL = "http://localhost:8072/user-service/users";
+const USER_INFO_URL = `${GATEWAY_SERVER_URL}/user-service/users`;
 
 export default function MyPage() {
 

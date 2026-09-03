@@ -4,12 +4,12 @@ import BackButton from "../components/BackButton";
 import LabeledInput from "../components/LabeledInput";
 import LabeledSelect from "../components/LabeledSelect";
 import CompleteButton from "../components/CompleteButton";
+import { GATEWAY_SERVER_URL } from "../config";
 
 const maxNicknameLen = 20;
 const maxEmailLen = 100;
 const maxPasswordLen = 20;
 
-const GATEWAY_SERVER_URL = "http://localhost:8072";
 const REGISTER_URL = "/user-service/signup";
 
 

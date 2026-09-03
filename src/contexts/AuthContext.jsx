@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Stomp } from "@stomp/stompjs";
 import { requestFcmToken } from "../firebase";
+import { WEBSOCKET_URL, GATEWAY_SERVER_URL } from "../config";
 
 const AuthContext = createContext(); // 전역으로 공유할 수 있는 파이프를 만드는 함수
 
@@ -13,8 +14,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true); // loading으로 refresh가 호출되기 전에 auth로 넘어가는 것을 막음.
   const stompClient = useRef(null);
 
-  const WEBSOCKET_URL = "ws://localhost:80/ws"; // nginx로 연결
-  const GATEWAY_SERVER_URL = "http://localhost:8072";
   const REFRESH_URL = "/user-service/refresh";
   const FCM_TOKEN_URL = "/user-service/api/v1/users/fcm/token";
 
