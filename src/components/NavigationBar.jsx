@@ -33,10 +33,8 @@ function NavigationBar() {
         ></img>
         <div>채팅방</div>
       </div>
-      <div
-        className="flex flex-col items-center gap-[0.8px] font-sans text-sm"
-        onClick={() => navigate("/")}
-      >
+      {/* TODO: 지출 도메인 구현 후 라우트 연결 */}
+      <div className="flex flex-col items-center gap-[0.8px] font-sans text-sm opacity-40">
         <img
           src={PieChartImage}
           className="w-[22px] h-[22px]"

@@ -1,18 +1,8 @@
-import { matchPath, useLocation } from "react-router-dom";
-import NavigationBar from "../components/NavigationBar.jsx";
-import TopBar from "../components/TopBar.jsx";
+import { Outlet } from "react-router-dom";
 
-export default function IphoneLayout({ children }) {
-  const location = useLocation();
-  const isAuth = location.pathname === "/auth";
-  const isRegister = location.pathname === "/register";
-  const isChat = matchPath("/chats/:chatId", location.pathname);
-  const isLogin = location.pathname === "/login";
-
+export default function IphoneLayout() {
   return (
-
     <div className="min-h-screen flex justify-center">
-      {/* iPhone Frame */}
       <div
         className="
         w-full h-screen
@@ -21,27 +11,15 @@ export default function IphoneLayout({ children }) {
         "
       >
         {/* Status Bar */}
-        <div className="h-10 flex items-center justify-center text-sm font-medium"></div>
+        <div className="h-10 shrink-0" />
 
-        {/* Top Bar (공통 기능은 아님) */}
-        {!isAuth && !isChat && !isRegister && !isLogin && (
-          <div className="h-[48px]">
-            <TopBar />
-          </div>
-        )}
-
-        {/* Screen */}
-        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">{children}</div>
-
-        {/* Navigation Bar (공통 기능은 아님) */}
-        {!isAuth && !isChat && !isRegister && !isLogin && (
-          <div className="h-[68px]">
-            <NavigationBar />
-          </div>
-        )}
+        {/* 상태바·홈바 사이 영역. 페이지가 h-full로 채울 기준이 된다. */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto [&::-webkit-scrollbar]:hidden">
+          <Outlet />
+        </div>
 
         {/* Home Bar */}
-        <div className="h-10 flex items-center justify-center text-sm font-medium"></div>
+        <div className="h-10 shrink-0" />
       </div>
     </div>
   );

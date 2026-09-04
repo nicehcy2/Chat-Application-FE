@@ -9,8 +9,11 @@ import { AGE_GROUP_OPTIONS, JOB_GROUP_OPTIONS, labelOf } from "../constants/user
 export default function MyPage() {
 
     const [user, setUser] = useState({});
-    const { auth } = useAuth();
+    const { auth, logout } = useAuth();
     const navigate = useNavigate();
+
+    // TODO: 라우트가 생기면 순서대로 연결
+    const PENDING_MENUS = ["친구 초대", "자주 묻는 질문", "고객 지원", "서비스 이용 약관", "탈퇴하기"];
 
     useEffect(() => {
         userApi.getUser(auth.userId)
@@ -64,12 +67,10 @@ export default function MyPage() {
                 </div>
             </div>
             <div className="flex flex-col bg-white px-4 py-4 gap-6">
-                <div className="text-base tracking-[-0.08em] cursor-pointer" onClick={() => navigate('/invite')}>친구 초대</div>
-                <div className="text-base tracking-[-0.08em] cursor-pointer" onClick={() => navigate('/faq')}>자주 묻는 질문</div>
-                <div className="text-base tracking-[-0.08em] cursor-pointer" onClick={() => navigate('/support')}>고객 지원</div>
-                <div className="text-base tracking-[-0.08em] cursor-pointer" onClick={() => navigate('/terms')}>서비스 이용 약관</div>
-                <div className="text-base tracking-[-0.08em] cursor-pointer" onClick={() => navigate('/logout')}>로그아웃</div>
-                <div className="text-base tracking-[-0.08em] cursor-pointer" onClick={() => navigate('/withdraw')}>탈퇴하기</div>
+                {PENDING_MENUS.map((label) => (
+                    <div key={label} className="text-base tracking-[-0.08em] text-gray-400">{label}</div>
+                ))}
+                <div className="text-base tracking-[-0.08em] cursor-pointer" onClick={logout}>로그아웃</div>
             </div>
         </div>
     );

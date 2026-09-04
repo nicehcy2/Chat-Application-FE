@@ -27,6 +27,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const logout = async () => {
+    // 서버 호출이 실패해도 클라이언트 상태는 비운다. 쿠키는 다음 refresh 실패로 자연히 정리된다.
+    await userApi.logout().catch(() => {});
+    setAuth(EMPTY_AUTH);
+  };
+
   useEffect(() => {
     configureAuth({
       getAccessToken: () => authRef.current.accessToken,
@@ -39,7 +45,7 @@ export const AuthProvider = ({ children }) => {
   if (loading) return null;
 
   return (
-    <AuthContext.Provider value={{ auth, setAuth, refresh }}>
+    <AuthContext.Provider value={{ auth, setAuth, refresh, logout }}>
       {children}
     </AuthContext.Provider>
   );

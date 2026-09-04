@@ -13,6 +13,9 @@ export const userApi = {
   refresh: () =>
     request("user", "/refresh", { method: "POST", auth: false }),
 
+  logout: () =>
+    request("user", "/logout", { method: "POST", auth: false }),
+
   getUser: (userId) =>
     request("user", `/users/${userId}`),
 
