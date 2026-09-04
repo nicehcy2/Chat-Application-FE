@@ -3,13 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { chatApi } from "../api/chatApi";
 import type { ChatRoomInfoResponseDto } from "../api/types";
 import { formatListTime } from "../utils/date";
+import { thumbFallbackClass } from "../utils/thumb";
 import MessageSquareImage from "../assets/images/message-square.png";
 
 type Status = "loading" | "success" | "empty" | "error";
 
-// 썸네일이 없을 때 방 id로 고정되는 플레이스홀더 색
-const THUMB_FALLBACKS = ["bg-primaryBarSoft", "bg-mintSoft", "bg-[#F5E4D0]", "bg-[#E3E7F5]"];
-const thumbClass = (id: number) => THUMB_FALLBACKS[id % THUMB_FALLBACKS.length];
 
 export default function ChatRoomList() {
   const navigate = useNavigate();
@@ -77,7 +75,7 @@ export default function ChatRoomList() {
                 {room.chatRoomThumbnail ? (
                   <img src={room.chatRoomThumbnail} alt="" className="w-[68px] h-[68px] rounded-[18px] object-cover shrink-0" />
                 ) : (
-                  <div className={`w-[68px] h-[68px] rounded-[18px] shrink-0 ${thumbClass(room.chatRoomId)}`} />
+                  <div className={`w-[68px] h-[68px] rounded-[18px] shrink-0 ${thumbFallbackClass(room.chatRoomId)}`} />
                 )}
                 <div className="flex flex-1 min-w-0 flex-col gap-1.5">
                   <div className="flex justify-between items-baseline gap-2">

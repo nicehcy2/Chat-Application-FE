@@ -29,11 +29,15 @@ module.exports = {
                 inkMuted: "#8A8794",       // 캡션·라벨
                 inkPlaceholder: "#9B98A5",
                 inkDisabled: "#A8A5B0",
+                inkFaint: "#C4C2CC",       // 미래/미달성 요일 글자
                 lineStrong: "#C9C6D2",     // 대시 보더, 비활성 인디케이터
                 lineMid: "#E1E0E6",        // 비활성 버튼 보더
                 line: "#E9E9ED",           // 카드 보더, 탭바 상단선
                 fill: "#F0F0F3",           // 스켈레톤, 미달성 원
                 fillInput: "#F2F2F5",      // 입력·칩 배경, 리스트 구분선
+                fillSoft: "#F7F7F9",       // 마감(비활성) 버튼 배경
+                thumbPeach: "#F5E4D0",     // 썸네일 플레이스홀더
+                thumbSky: "#E3E7F5",       // 썸네일 플레이스홀더
                 bgApp: "#F4F4F7",          // 카드형 화면 배경
             },
             transitionDuration: {

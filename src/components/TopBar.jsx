@@ -3,13 +3,26 @@ import { useNavigate } from "react-router-dom";
 import LogoImage from "../assets/images/logo.png";
 import AlarmImage from "../assets/images/alarm.png";
 import OptionsImage from "../assets/images/options-horizontal.png";
+import BackButtonImage from "../assets/images/back-button.png";
 
-// title이 없으면 로고형(홈), 있으면 제목형. 아이콘은 44×44 히트 영역 안에 둔다.
-export default function TopBar({ title, hasUnreadAlarm = false }) {
+// title 없음 → 로고형(홈). title만 → 제목형. back → 뒤로가기 + 제목(우측 아이콘 없음).
+// 아이콘은 44px 히트 영역 안에 둔다.
+export default function TopBar({ title, back = false, hasUnreadAlarm = false }) {
   const navigate = useNavigate();
 
+  if (back) {
+    return (
+      <div className="flex items-center gap-1.5 h-full px-3 bg-white">
+        <button type="button" className="w-10 h-11 flex items-center justify-center" onClick={() => navigate(-1)} aria-label="뒤로">
+          <img src={BackButtonImage} alt="" className="w-5 h-5" />
+        </button>
+        <p className="text-[17px] font-extrabold text-ink">{title}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-row justify-between items-center h-full px-4">
+    <div className="flex flex-row justify-between items-center h-full px-4 bg-white">
       {title ? (
         <p className="text-[17px] font-extrabold text-ink">{title}</p>
       ) : (
