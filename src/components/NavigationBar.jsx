@@ -10,7 +10,7 @@ function NavigationBar() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-row justify-evenly items-center h-full border-2">
+    <div className="flex flex-row justify-evenly items-center h-full border-t border-line">
       <div
         className="flex flex-col items-center gap-[0.8px] font-sans text-sm"
         onClick={() => navigate("/")}

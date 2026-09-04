@@ -35,7 +35,7 @@ export default function Login() {
       <div className="flex flex-col px-4 justify-center h-full gap-8 pb-20">
         <form onSubmit={handleSubmit} className="flex flex-col gap-12">
           <div className="flex flex-col gap-4">
-            <p className="text-2xl text-primary font-bold tracking-[-0.08em]">
+            <p className="text-2xl text-primary font-bold">
               로그인
             </p>
             <input

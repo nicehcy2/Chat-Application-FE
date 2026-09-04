@@ -1,7 +1,7 @@
 export default function LabeledSelect({ label, options, value, onChange }) {
   return (
     <div className="flex flex-col gap-4">
-      {label && <p className="text-xl text-primary font-bold tracking-[-0.08em]">{label}</p>}
+      {label && <p className="text-xl text-primary font-bold">{label}</p>}
       <div className="grid grid-cols-2 gap-3">
         {options.map((option) => (
           <button

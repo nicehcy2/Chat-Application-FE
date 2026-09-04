@@ -24,17 +24,17 @@ export default function MyPage() {
     return (
         <div className="flex flex-col gap-4 bg-gray-100">
             <div className="flex flex-row items-center gap-4 bg-white px-4 py-4">
-                <img className="w-22 h-full rounded-full object-cover"
+                <img className="w-20 h-20 rounded-full object-cover shrink-0"
                     src={user.imageUrl ?? Logo}
                     alt="profile"
                 />
                 <div className="flex flex-1 flex-col gap-1">
                     <div>
-                        <p className="text-xl font-bold tracking-[-0.06em]">{user.nickname ?? 'null'}</p>
+                        <p className="text-xl font-bold">{user.nickname ?? 'null'}</p>
                         <p className="text-sm text-primary">{labelOf(AGE_GROUP_OPTIONS, user.ageGroup)} · {labelOf(JOB_GROUP_OPTIONS, user.jobGroup)}</p>
                         <p className="text-sm text-gray-500">{user.email ?? 'null'}</p>
                     </div>
-                    <button className="mt-1 w-full py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 tracking-[-0.06em]" 
+                    <button className="mt-1 w-full py-2 border border-gray-300 rounded-lg text-sm bg-gray-50" 
                         onClick={() => navigate('/mypage/edit')}>
                         프로필 수정
                     </button>
@@ -42,7 +42,7 @@ export default function MyPage() {
             </div>
             <div className="bg-white px-4 py-4 flex flex-col gap-4">
                 <div className="flex flex-row justify-between items-end">
-                    <p className="text-lg tracking-[-0.08em]">나의 하루 목표 지출액</p>
+                    <p className="text-lg">나의 하루 목표 지출액</p>
                     <p className="text-sm text-teal-400 font-bold">수정</p>
                 </div>
                 <div className="flex flex-row justify-between">
@@ -56,7 +56,7 @@ export default function MyPage() {
                     </div>
                 </div>
                 <div className="flex flex-row">
-                    <p className="text-lg tracking-[-0.08em]">나의 리워드</p>
+                    <p className="text-lg">나의 리워드</p>
                 </div>
                 <div className="border rounded-lg flex justify-center items-center py-4 pr-10 gap-3">
                     <img className="w-6 h-6 rounded-full object-cover"
@@ -68,9 +68,9 @@ export default function MyPage() {
             </div>
             <div className="flex flex-col bg-white px-4 py-4 gap-6">
                 {PENDING_MENUS.map((label) => (
-                    <div key={label} className="text-base tracking-[-0.08em] text-gray-400">{label}</div>
+                    <div key={label} className="text-base text-gray-400">{label}</div>
                 ))}
-                <div className="text-base tracking-[-0.08em] cursor-pointer" onClick={logout}>로그아웃</div>
+                <div className="text-base cursor-pointer" onClick={logout}>로그아웃</div>
             </div>
         </div>
     );

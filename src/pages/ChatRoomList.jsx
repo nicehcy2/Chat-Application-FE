@@ -24,8 +24,8 @@ function ChatRoomList() {
   }
 
   return (
-    <div className="relative flex flex-col pl-4 tracking-tight h-full">
-      <div className="text-[22px] font-sans font-bold py-2 text-primary-dark">
+    <div className="relative flex flex-col pl-4 h-full">
+      <div className="text-[22px] font-sans font-bold py-2 text-primaryDeep">
         나의 채팅 그룹
       </div>
       <div className="flex flex-col gap-3 py-2 overflow-y-auto h-full pr-2">
@@ -59,11 +59,11 @@ function ChatRoomList() {
                 </div>
               </div>
               <div className="flex flex-row justify-between">
-                <div className="text-xs line-clamp-2 w-[220px] text-[#999]">
+                <div className="text-xs line-clamp-2 w-[220px] text-inkMuted">
                   {chatRoom.lastChatMessage}
                 </div>
                 {chatRoom.unreadChatCount > 0 && (
-                  <div className="h-6 px-2 min-w-[24px] text-xs text-white font-semibold border rounded-full bg-accent flex flex-row items-center justify-center mt-1">
+                  <div className="h-6 px-2 min-w-[24px] text-xs text-white font-semibold border rounded-full bg-mint flex flex-row items-center justify-center mt-1">
                     {chatRoom.unreadChatCount}
                   </div>
                 )}

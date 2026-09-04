@@ -45,7 +45,7 @@ export default function EditProfile() {
       <div className="flex flex-row py-2 justify-between items-center">
         <div className="flex flex-row gap-3 items-center">
           <BackButton />
-          <p className="text-xl tracking-[-0.06em]">프로필 수정</p>
+          <p className="text-xl">프로필 수정</p>
         </div>
         <button className="font-bold text-primary" onClick={saveEditProfile}>저장</button>
       </div>

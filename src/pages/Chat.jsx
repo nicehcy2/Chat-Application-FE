@@ -68,12 +68,12 @@ function ChatRoom({ roomId }) {
   };
 
   return (
-    <div className="flex flex-col h-full tracking-tight">
+    <div className="flex flex-col h-full">
       <div className="flex flex-row justify-between h-[56px] items-center">
         <div className="flex flex-row h-full items-center gap-1 p-4">
           <img src={BackButtonImage} alt="뒤로가기" className="w-5 h-5" onClick={() => navigate(-1)} />
           <span className="text-xl font-bold px-2">{title}</span>
-          <span className="text-sm font-bold text-primary-dark">{participantCount}</span>
+          <span className="text-sm font-bold text-primaryDeep">{participantCount}</span>
         </div>
         <div className="flex flex-row gap-3 h-full items-center p-4">
           <img src={ChatRankButtonImage} alt="채팅 랭크" className="w-4 h-6" />

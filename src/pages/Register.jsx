@@ -99,7 +99,7 @@ export default function Register() {
 
         <div className="px-5 flex flex-col gap-8">
           <div className="flex flex-col gap-4">
-            <p className="text-xl text-primary font-bold tracking-[-0.08em]">
+            <p className="text-xl text-primary font-bold">
               1. 이메일{" "}
               {emailError && <span className="text-red-500 text-sm font-normal">{emailError}</span>}
               {emailChecked && !emailError && <span className="text-green-500 text-sm font-normal">사용 가능한 이메일입니다.</span>}

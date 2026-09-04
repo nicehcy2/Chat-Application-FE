@@ -6,7 +6,7 @@ export default function ChatCreate() {
     <div className="flex flex-col h-full">
       <div className="flex flex-row items-center gap-3 p-4">
         <BackButton />
-        <p className="text-xl font-bold tracking-[-0.06em]">채팅방 만들기</p>
+        <p className="text-xl font-bold">채팅방 만들기</p>
       </div>
       <div className="flex flex-1 items-center justify-center text-gray-400">준비 중이에요.</div>
     </div>
