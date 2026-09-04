@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useStomp } from "../contexts/StompContext";
 import { chatApi } from "../api/chatApi";
 
 import SendButtonImage from "../assets/images/chat-send-button.png";
@@ -11,7 +12,8 @@ import ChatOptionImage from "../assets/images/chat-option.png";
 export default function Chat() {
   const bottomRef = useRef(null);
   const navigate = useNavigate();
-  const { auth, subscribe, publish } = useAuth();
+  const { auth } = useAuth();
+  const { subscribe, publish } = useStomp();
 
   const [messages, setMessages] = useState([]); // 메시지 저장 상태
   const [inputValue, setInputValue] = useState(""); // 사용자 입력 상태
@@ -40,8 +42,8 @@ export default function Chat() {
     chatApi.getMessages(chatRoomId)
       .then(setMessages)
       .catch((error) => console.error("메시지 조회 실패:", error));
-    return () => subscription?.unsubscribe();
-  }, [chatRoomId]);
+    return () => subscription.unsubscribe();
+  }, [chatRoomId, subscribe]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView();

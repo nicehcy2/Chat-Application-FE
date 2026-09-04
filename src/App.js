@@ -11,8 +11,11 @@ import AuthPage from "./pages/AuthPage";
 import MyPage from "./pages/MyPage";
 import EditProfile from "./pages/EditProfile";
 import ChatRoomeExplore from "./pages/ChatRoomExplore";
+import { useFcm } from "./hooks/useFcm";
 
 function App() {
+  useFcm();
+
   return (
     <BrowserRouter>
       <IphoneLayout>

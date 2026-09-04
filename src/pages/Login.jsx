@@ -7,7 +7,7 @@ import { userApi } from "../api/userApi";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { setAuth, connectWebSocket } = useAuth();
+  const { setAuth } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,7 +20,6 @@ export default function Login() {
       const { accessToken, sessionId, userId } = await userApi.login(email, password);
 
       setAuth({ accessToken, sessionId, userId });
-      connectWebSocket(accessToken);
 
       navigate("/chats");
     } catch (error) {
