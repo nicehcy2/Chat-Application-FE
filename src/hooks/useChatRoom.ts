@@ -5,6 +5,7 @@ import type {
   ChatRoomParticipantDto,
   MessageDto,
   MessageSendRequest,
+  MessageType,
   ReadReceiptEvent,
   ReadReceiptRequest,
 } from "../api/types";
@@ -38,7 +39,7 @@ export interface ChatRoomState {
   hasMore: boolean;
   loadingOlder: boolean;
   loadOlder: () => Promise<void>;
-  send: (content: string) => boolean;
+  send: (content: string, type?: MessageType) => boolean;
 }
 
 export function useChatRoom(roomId: string): ChatRoomState {
@@ -142,13 +143,13 @@ export function useChatRoom(roomId: string): ChatRoomState {
     }
   }, [roomId, hasMore, loadingOlder, messages]);
 
-  const send = useCallback((content: string): boolean => {
+  const send = useCallback((content: string, type: MessageType = "TEXT"): boolean => {
     const text = content.trim();
     if (!text) return false;
     const payload: MessageSendRequest = {
       chatRoomId: Number(roomId),
       correlationId: crypto.randomUUID(),
-      messageType: "TEXT",
+      messageType: type,
       content: text,
     };
     return publish(`/pub/chat.message.${roomId}`, payload);

@@ -5,13 +5,18 @@ import { userApi } from "../api/userApi";
 import { chatApi } from "../api/chatApi";
 import type { ChatRoomInfoResponseDto } from "../api/types";
 import { fetchHomeSummary, type HomeSummary } from "../mocks/home";
+import { addExpenseRecord, type NewExpenseRecord } from "../mocks/expenses";
+import { getLocalDailyGoal, isGoalSkipped } from "../mocks/goal";
 import { thumbFallbackClass } from "../utils/thumb";
+import StateView from "../components/StateView";
+import ExpenseRecordSheet from "../components/expense/ExpenseRecordSheet";
 import GoldImage from "../assets/images/gold.png";
 
 type Status = "loading" | "success" | "error";
 
 interface HomeData {
   nickname: string;
+  dailyLimit: number;
   summary: HomeSummary;
   rooms: ChatRoomInfoResponseDto[];
 }
@@ -19,8 +24,7 @@ interface HomeData {
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
 const won = (n: number) => n.toLocaleString("ko-KR");
 
-const formatToday = () =>
-  new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "long" });
+const formatToday = () => new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "long" });
 
 function weekDates(): Date[] {
   const today = new Date();
@@ -39,6 +43,7 @@ export default function Home() {
   const [data, setData] = useState<HomeData | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [reloadKey, setReloadKey] = useState(0);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     if (userId === null) return;
@@ -46,7 +51,13 @@ export default function Home() {
     Promise.all([userApi.getUser(userId), fetchHomeSummary(), chatApi.getRooms()])
       .then(([user, summary, rooms]) => {
         if (cancelled) return;
-        setData({ nickname: user.nickname, summary, rooms: rooms.slice(0, 2) });
+        // 서버 값이 있으면 우선, 없으면 로컬 저장값. 둘 다 0이고 건너뛴 적 없으면 목표 설정으로 보낸다.
+        const dailyLimit = user.dayTargetExpenditure > 0 ? user.dayTargetExpenditure : getLocalDailyGoal();
+        if (dailyLimit === 0 && !isGoalSkipped()) {
+          navigate("/onboarding/goal", { replace: true });
+          return;
+        }
+        setData({ nickname: user.nickname, dailyLimit, summary, rooms: rooms.slice(0, 2) });
         setStatus("success");
       })
       .catch(() => {
@@ -55,28 +66,36 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [userId, reloadKey]);
+  }, [userId, reloadKey, navigate]);
 
-  const retry = () => {
+  const reload = () => {
     setStatus("loading");
     setReloadKey((k) => k + 1);
   };
 
+  const recordExpense = async (record: NewExpenseRecord) => {
+    await addExpenseRecord(record);
+    reload();
+  };
+
   return (
-    <div className="flex flex-col gap-3.5 px-4 pt-4 pb-6 bg-bgApp min-h-full">
+    <div className="relative flex flex-col gap-3.5 px-4 pt-4 pb-6 bg-bgApp min-h-full">
       {status === "loading" && <Skeleton />}
 
       {status === "error" && (
-        <div className="bg-white rounded-[18px] p-4 flex items-center justify-between">
-          <p className="text-[13px] font-bold text-ink">홈 정보를 불러오지 못했어요</p>
-          <button
-            type="button"
-            onClick={retry}
-            className="h-[34px] px-3 rounded-[10px] border-[1.2px] border-danger text-danger text-xs font-extrabold"
-          >
-            재시도
-          </button>
-        </div>
+        <StateView
+          icon={<span className="text-[32px] font-extrabold text-danger">!</span>}
+          iconBg="bg-dangerSoftBg"
+          title="홈 정보를 불러오지 못했어요"
+          description={
+            <>
+              네트워크 연결을 확인하고
+              <br />
+              다시 시도해주세요
+            </>
+          }
+          outlineAction={{ label: "다시 시도", onClick: reload }}
+        />
       )}
 
       {status === "success" && data && (
@@ -86,19 +105,62 @@ export default function Home() {
             <p className="text-[21px] font-extrabold text-ink mt-0.5">{data.nickname}님, 오늘도 무지출 가볼까요?</p>
           </div>
 
-          <HeroCard summary={data.summary} onRecord={() => navigate("/expenses")} />
+          <HeroCard
+            dailyLimit={data.dailyLimit}
+            summary={data.summary}
+            onRecord={() => setSheetOpen(true)}
+            onSetGoal={() => navigate("/onboarding/goal", { state: { edit: true } })}
+          />
           <WeekCard summary={data.summary} />
           <GroupsCard rooms={data.rooms} />
           <RewardCard summary={data.summary} />
+
+          <ExpenseRecordSheet
+            open={sheetOpen}
+            dailyLimit={data.dailyLimit}
+            usedToday={data.summary.usedToday}
+            shareTarget={data.rooms[0] ? { chatRoomId: data.rooms[0].chatRoomId, title: data.rooms[0].chatRoomTitle } : null}
+            onClose={() => setSheetOpen(false)}
+            onSubmit={recordExpense}
+          />
         </>
       )}
     </div>
   );
 }
 
-function HeroCard({ summary, onRecord }: { summary: HomeSummary; onRecord: () => void }) {
-  const remaining = Math.max(0, summary.dailyLimit - summary.usedToday);
-  const usedRatio = Math.min(100, (summary.usedToday / summary.dailyLimit) * 100);
+function HeroCard({
+  dailyLimit,
+  summary,
+  onRecord,
+  onSetGoal,
+}: {
+  dailyLimit: number;
+  summary: HomeSummary;
+  onRecord: () => void;
+  onSetGoal: () => void;
+}) {
+  // 목표를 건너뛴 경우 — 한도 카드 대신 '목표 정하기'
+  if (dailyLimit === 0) {
+    return (
+      <div className="bg-primary rounded-[22px] p-5 flex flex-col gap-4">
+        <div>
+          <p className="text-xs font-semibold text-white/[0.72]">오늘 남은 한도</p>
+          <p className="text-[21px] font-extrabold text-white leading-[1.25] mt-1">
+            하루 목표를 정하면
+            <br />
+            남은 한도를 알려드려요
+          </p>
+        </div>
+        <button type="button" onClick={onSetGoal} className="h-[46px] rounded-[14px] bg-white text-primaryDeep text-[15px] font-extrabold">
+          목표 정하기
+        </button>
+      </div>
+    );
+  }
+
+  const remaining = Math.max(0, dailyLimit - summary.usedToday);
+  const usedRatio = Math.min(100, (summary.usedToday / dailyLimit) * 100);
 
   return (
     <div className="bg-primary rounded-[22px] p-5 flex flex-col gap-4">
@@ -111,9 +173,7 @@ function HeroCard({ summary, onRecord }: { summary: HomeSummary; onRecord: () =>
           </p>
         </div>
         {summary.streakDays > 0 && (
-          <span className="bg-white/[0.16] text-white text-xs font-bold px-2.5 py-1.5 rounded-full">
-            {summary.streakDays}일 연속 달성
-          </span>
+          <span className="bg-white/[0.16] text-white text-xs font-bold px-2.5 py-1.5 rounded-full">{summary.streakDays}일 연속 달성</span>
         )}
       </div>
       <div className="flex flex-col gap-[7px]">
@@ -122,15 +182,10 @@ function HeroCard({ summary, onRecord }: { summary: HomeSummary; onRecord: () =>
         </div>
         <div className="flex justify-between text-[11px] font-semibold text-white/80">
           <span>사용 {won(summary.usedToday)}원</span>
-          <span>한도 {won(summary.dailyLimit)}원</span>
+          <span>한도 {won(dailyLimit)}원</span>
         </div>
       </div>
-      {/* TODO: 지출 기록 입력 시트는 별도 설계. 지금은 지출 화면으로 이동 */}
-      <button
-        type="button"
-        onClick={onRecord}
-        className="h-[46px] rounded-[14px] bg-white text-primaryDeep text-[15px] font-extrabold"
-      >
+      <button type="button" onClick={onRecord} className="h-[46px] rounded-[14px] bg-white text-primaryDeep text-[15px] font-extrabold">
         ＋ 지출 기록하기
       </button>
     </div>
@@ -160,9 +215,7 @@ function WeekCard({ summary }: { summary: HomeSummary }) {
           const label = isToday ? "text-primary font-bold" : i < todayIndex ? "text-inkMuted" : "text-inkFaint";
           return (
             <div key={i} className="flex flex-col items-center gap-1.5">
-              <div className={`w-[30px] h-[30px] rounded-full text-xs flex items-center justify-center ${circle}`}>
-                {achieved ? "✓" : date.getDate()}
-              </div>
+              <div className={`w-[30px] h-[30px] rounded-full text-xs flex items-center justify-center ${circle}`}>{achieved ? "✓" : date.getDate()}</div>
               <span className={`text-[11px] ${label}`}>{isToday ? "오늘" : WEEKDAY_LABELS[i]}</span>
             </div>
           );
@@ -209,8 +262,7 @@ function GroupsCard({ rooms }: { rooms: ChatRoomInfoResponseDto[] }) {
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-ink truncate">
-                {room.chatRoomTitle}{" "}
-                <span className="text-[11px] font-semibold text-primary">{room.participationCount}</span>
+                {room.chatRoomTitle} <span className="text-[11px] font-semibold text-primary">{room.participationCount}</span>
               </p>
               <p className="text-xs text-inkMuted truncate">{room.lastChatMessage ?? "아직 대화가 없어요"}</p>
             </div>

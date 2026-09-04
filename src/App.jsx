@@ -17,6 +17,10 @@ import Chat from "./pages/Chat";
 import MyPage from "./pages/MyPage";
 import EditProfile from "./pages/EditProfile";
 import NotFound from "./pages/NotFound";
+import OnboardingGoal from "./pages/OnboardingGoal";
+import ChatRank from "./pages/ChatRank";
+import Settings from "./pages/Settings";
+import Notifications from "./pages/Notifications";
 
 function App() {
   useFcm();
@@ -40,7 +44,11 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/chats/create" element={<ChatCreate />} />
             <Route path="/chats/:chatRoomId" element={<Chat />} />
+            <Route path="/chats/:chatRoomId/rank" element={<ChatRank />} />
             <Route path="/mypage/edit" element={<EditProfile />} />
+            <Route path="/onboarding/goal" element={<OnboardingGoal />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/notifications" element={<Notifications />} />
           </Route>
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/login" element={<Login />} />

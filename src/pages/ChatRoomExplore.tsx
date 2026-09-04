@@ -11,6 +11,7 @@ import {
 } from "../mocks/explore";
 import { thumbFallbackClass } from "../utils/thumb";
 import RoomDetailSheet from "../components/explore/RoomDetailSheet";
+import StateView from "../components/StateView";
 
 type Status = "loading" | "success" | "empty" | "error";
 type RoomAction = "idle" | "joining" | "applied";
@@ -137,30 +138,23 @@ export default function ChatRoomExplore() {
           {status === "loading" && <ListSkeleton />}
 
           {status === "error" && (
-            <div className="flex flex-col items-center justify-center gap-2 py-16">
-              <p className="text-[15px] font-bold text-ink">방 목록을 불러오지 못했어요</p>
-              <button
-                type="button"
-                onClick={retry}
-                className="h-9 px-3.5 rounded-xl border-[1.4px] border-primary text-primary text-[13px] font-extrabold"
-              >
-                다시 시도
-              </button>
-            </div>
+            <StateView
+              className="py-10 pb-10"
+              icon={<span className="text-[32px] font-extrabold text-danger">!</span>}
+              iconBg="bg-dangerSoftBg"
+              title="방 목록을 불러오지 못했어요"
+              outlineAction={{ label: "다시 시도", onClick: retry }}
+            />
           )}
 
           {status === "empty" && (
-            <div className="flex flex-col items-center justify-center gap-2 py-16">
-              <p className="text-[15px] font-bold text-ink">조건에 맞는 방이 없어요</p>
-              <p className="text-[13px] text-inkMuted">검색어나 필터를 바꿔보세요</p>
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="mt-2 h-9 px-3.5 rounded-xl border-[1.4px] border-primary text-primary text-[13px] font-extrabold"
-              >
-                필터 초기화
-              </button>
-            </div>
+            <StateView
+              className="py-10 pb-10"
+              icon={<SearchIcon />}
+              title="조건에 맞는 방이 없어요"
+              description="검색어나 필터를 바꿔보세요"
+              outlineAction={{ label: "필터 초기화", onClick: resetFilters }}
+            />
           )}
 
           {status === "success" && (

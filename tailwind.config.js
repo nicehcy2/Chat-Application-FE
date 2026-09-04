@@ -23,7 +23,11 @@ module.exports = {
                 dangerTintBg: "#FDF4F4",   // 에러 카드 배경
                 dangerLine: "#F3DADA",     // 에러 카드 보더
                 dangerLineSoft: "#F0C9CA", // 강퇴·나가기 버튼 보더
+                dangerSoftBg: "#FDECEC",   // 에러 상태 아이콘 원
+                dangerInputBg: "#FFF5F5",  // 유효성 에러 입력 배경
                 warn: "#F5A524",
+                warnTintBg: "#FDEBC8",     // 한도 경고 아이콘 배경, 3위 뱃지
+                warnDeep: "#7A4A00",       // 경고 배경 위 글자
                 ink: "#17161C",            // 본문 최고 대비
                 inkMid: "#4B4854",         // 칩·부제
                 inkSub: "#6B6875",         // 설명문

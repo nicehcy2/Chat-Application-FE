@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { fetchMonthlyExpense, type ExpenseCategory, type MonthlyExpense } from "../mocks/expenses";
+import { getLocalDailyGoal } from "../mocks/goal";
 import { parseServerDate } from "../utils/date";
+import StateView from "../components/StateView";
 
 type Status = "loading" | "success" | "error";
 
 const CATEGORY_META: Record<ExpenseCategory, { label: string; short: string; color: string; tile: string }> = {
   FOOD: { label: "식비", short: "식", color: "#583FE7", tile: "bg-primaryTintBg text-primary" },
   TRANSPORT: { label: "교통", short: "교", color: "#8C7BF2", tile: "bg-mintTintBg text-mintDeep" },
+  CAFE: { label: "카페", short: "카", color: "#F5A524", tile: "bg-warnTintBg text-warnDeep" },
   SHOPPING: { label: "쇼핑", short: "쇼", color: "#11B5A4", tile: "bg-mintTintBg text-mintDeep" },
   ETC: { label: "기타", short: "기", color: "#E7E5F3", tile: "bg-fillInput text-inkMid" },
 };
@@ -41,7 +44,7 @@ export default function Expenses() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchMonthlyExpense(yearMonth.year, yearMonth.month)
+    fetchMonthlyExpense(yearMonth.year, yearMonth.month, getLocalDailyGoal() || 20_000)
       .then((d) => {
         if (cancelled) return;
         setData(d);
@@ -87,16 +90,12 @@ export default function Expenses() {
 
       {status === "loading" && <Skeleton />}
       {status === "error" && (
-        <div className="bg-white rounded-[20px] p-[18px] flex items-center justify-between">
-          <p className="text-[13px] font-bold text-ink">지출 내역을 불러오지 못했어요</p>
-          <button
-            type="button"
-            onClick={retry}
-            className="h-[34px] px-3 rounded-[10px] border-[1.2px] border-danger text-danger text-xs font-extrabold"
-          >
-            재시도
-          </button>
-        </div>
+        <StateView
+          icon={<span className="text-[32px] font-extrabold text-danger">!</span>}
+          iconBg="bg-dangerSoftBg"
+          title="지출 내역을 불러오지 못했어요"
+          outlineAction={{ label: "다시 시도", onClick: retry }}
+        />
       )}
       {status === "success" && data && (
         <>
