@@ -4,6 +4,7 @@ import Logo from "../assets/images/logo.png"
 import GoldImage from "../assets/images/gold.png"
 import { useAuth } from "../contexts/AuthContext";
 import { userApi } from "../api/userApi";
+import { AGE_GROUP_OPTIONS, JOB_GROUP_OPTIONS, labelOf } from "../constants/user";
 
 export default function MyPage() {
 
@@ -27,7 +28,7 @@ export default function MyPage() {
                 <div className="flex flex-1 flex-col gap-1">
                     <div>
                         <p className="text-xl font-bold tracking-[-0.06em]">{user.nickname ?? 'null'}</p>
-                        <p className="text-sm text-primary">{user.ageGroup ?? 'null'} · {user.jobGroup ?? 'null'}</p>
+                        <p className="text-sm text-primary">{labelOf(AGE_GROUP_OPTIONS, user.ageGroup)} · {labelOf(JOB_GROUP_OPTIONS, user.jobGroup)}</p>
                         <p className="text-sm text-gray-500">{user.email ?? 'null'}</p>
                     </div>
                     <button className="mt-1 w-full py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 tracking-[-0.06em]" 

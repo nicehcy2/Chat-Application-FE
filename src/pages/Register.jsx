@@ -5,10 +5,15 @@ import LabeledInput from "../components/LabeledInput";
 import LabeledSelect from "../components/LabeledSelect";
 import CompleteButton from "../components/CompleteButton";
 import { userApi } from "../api/userApi";
-
-const maxNicknameLen = 20;
-const maxEmailLen = 100;
-const maxPasswordLen = 20;
+import {
+  AGE_GROUP_OPTIONS,
+  EMAIL_MAX_LEN,
+  GENDER_OPTIONS,
+  JOB_GROUP_OPTIONS,
+  NICKNAME_MAX_LEN,
+  PASSWORD_MAX_LEN,
+  UNDECIDED,
+} from "../constants/user";
 
 export default function Register() {
 
@@ -20,7 +25,7 @@ export default function Register() {
     const [birthDayError, setBirthDayError] = useState("");
     const [gender, setGender] = useState("");
     const [ageGroup, setAgeGroup] = useState("");
-    const [job, setJob] = useState("");
+    const [jobGroup, setJobGroup] = useState("");
     const [nicknameError, setNicknameError] = useState("");
     const [emailError, setEmailError] = useState("");
     const [emailChecked, setEmailChecked] = useState(false);
@@ -70,37 +75,14 @@ export default function Register() {
 
             if (hasError) return;
 
-        const genderCode = gender === "남자" ? "M" : gender === "여자" ? "W" : "UNDECIDED";
-
-        const ageGroupMap = {
-            "14~19세": "TEENAGER",
-            "20대": "TWENTIES",
-            "30대": "THIRTIES",
-            "40대": "FORTIES",
-            "50대": "FIFTIES",
-            "60대 이상": "SIXTIES_AND_ABOVE",
-        };
-
-        const jobGroupMap = {
-            "학생": "STUDENT",
-            "직장인": "EMPLOYEE",
-            "주부": "HOMEMAKER",
-            "자영업자": "SELF_EMPLOYED",
-        };
-
-        await userApi.signup({
+            await userApi.signup({
               email,
               password,
               nickname,
               birthDay,
-              gender: genderCode,
-              userRole: "USER",
-              ageGroup: ageGroupMap[ageGroup] ?? "UNDECIDED",
-              jobGroup: jobGroupMap[job] ?? "UNDECIDED",
-              imageUrl: "image.url",
-              reward: 0,
-              status: true,
-              dayTargetExpenditure: 0,
+              gender: gender || UNDECIDED,
+              ageGroup: ageGroup || UNDECIDED,
+              jobGroup: jobGroup || UNDECIDED,
             });
 
             navigate("/chats");
@@ -125,7 +107,7 @@ export default function Register() {
             <div className="flex gap-2">
               <input
                 type="text"
-                maxLength={maxEmailLen}
+                maxLength={EMAIL_MAX_LEN}
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setEmailChecked(false); if (e.target.value) setEmailError(""); }}
                 className={`flex-1 h-10 rounded-2xl bg-gray-100 border px-4 ${emailError ? "border-red-500" : "border-transparent"}`}
@@ -146,7 +128,7 @@ export default function Register() {
               setPassword(value);
               if (value) setPasswordError("");
             }}
-            maxLength={maxPasswordLen}
+            maxLength={PASSWORD_MAX_LEN}
             error={passwordError}
           />
           <LabeledInput
@@ -156,7 +138,7 @@ export default function Register() {
               setNickname(value);
               if (value) setNicknameError("");
             }}
-            maxLength={maxNicknameLen}
+            maxLength={NICKNAME_MAX_LEN}
             error={nicknameError}
           />
           <LabeledInput
@@ -172,21 +154,21 @@ export default function Register() {
           />
           <LabeledSelect
             label="5. 성별을 알려주세요."
-            options={["여자", "남자"]}
+            options={GENDER_OPTIONS}
             value={gender}
             onChange={setGender}
           />
           <LabeledSelect
             label="6. 연령대를 알려주세요."
-            options={["14~19세", "20대", "30대", "40대", "50대", "60대 이상"]}
+            options={AGE_GROUP_OPTIONS}
             value={ageGroup}
             onChange={setAgeGroup}
           />
           <LabeledSelect
             label="7. 현재 하시는 일을 알려주세요."
-            options={["학생", "직장인", "주부", "자영업자"]}
-            value={job}
-            onChange={setJob}
+            options={JOB_GROUP_OPTIONS}
+            value={jobGroup}
+            onChange={setJobGroup}
           />
           <CompleteButton label="완료" onChange={handleSubmit} />
         </div>

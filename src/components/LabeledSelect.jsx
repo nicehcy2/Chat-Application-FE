@@ -5,16 +5,17 @@ export default function LabeledSelect({ label, options, value, onChange }) {
       <div className="grid grid-cols-2 gap-3">
         {options.map((option) => (
           <button
-            key={option}
-            onClick={() => onChange(option)}
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
             className={`h-10 rounded-2xl border text-sm font-medium
               ${
-                value === option
+                value === option.value
                   ? "bg-primary text-white border-primary"
                   : "bg-gray-100 text-gray-700 border-transparent"
               }`}
           >
-            {option}
+            {option.label}
           </button>
         ))}
       </div>
