@@ -22,6 +22,7 @@ module.exports = {
                 dangerSoft: "#F9E1E1",     // 에러 카드 아이콘 배경
                 dangerTintBg: "#FDF4F4",   // 에러 카드 배경
                 dangerLine: "#F3DADA",     // 에러 카드 보더
+                dangerLineSoft: "#F0C9CA", // 강퇴·나가기 버튼 보더
                 warn: "#F5A524",
                 ink: "#17161C",            // 본문 최고 대비
                 inkMid: "#4B4854",         // 칩·부제

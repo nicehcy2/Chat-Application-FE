@@ -23,6 +23,10 @@ export const formatDate = (value: DateInput): string =>
     year: "numeric", month: "long", day: "numeric", weekday: "long",
   });
 
+// 채팅방 날짜 칩. 예) 9월 2일 수요일
+export const formatDateChip = (value: DateInput): string =>
+  parseServerDate(value).toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "long" });
+
 // 채팅방 목록의 마지막 메시지 시각. 오늘이면 시각, 어제, 일주일 안이면 요일, 그 뒤는 날짜.
 export function formatListTime(value: DateInput | null | undefined): string {
   if (!value) return "";

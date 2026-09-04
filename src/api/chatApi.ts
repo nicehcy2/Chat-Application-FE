@@ -27,4 +27,11 @@ export const chatApi = {
   // TODO(서버): 아직 미구현. 응답은 생성된 chatRoomId로 가정.
   createRoom: (payload: CreateRoomRequest) =>
     request<number>("chat", "/api/chats", { method: "POST", body: payload }),
+
+  // TODO(서버): 로드맵 ⑤ 입장/퇴장/추방. 구현 전까지는 404가 난다.
+  leaveRoom: (roomId: string | number) =>
+    request("chat", `/api/chats/${roomId}/leave`, { method: "POST" }),
+
+  kickMember: (roomId: string | number, userId: number) =>
+    request("chat", `/api/chats/${roomId}/members/${userId}`, { method: "DELETE" }),
 };

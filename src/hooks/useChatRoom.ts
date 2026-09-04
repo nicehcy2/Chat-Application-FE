@@ -15,6 +15,7 @@ const PAGE_SIZE = 30;
 // 서버(ChatStompController)가 이 값을 전제로 설계됨. 연속 수신 시 읽음 발행을 한 번으로 묶는다.
 const READ_DEBOUNCE_MS = 300;
 
+export type ChatRoomStatus = "loading" | "ready" | "error";
 type ParticipantMap = Record<number, ChatRoomParticipantDto>;
 
 // TSID는 2^53을 넘는 문자열이라 Number로 비교하면 정밀도가 깨진다.
@@ -28,6 +29,9 @@ function mergeByTsid(...lists: MessageDto[][]): MessageDto[] {
 
 export interface ChatRoomState {
   myId: number;
+  isHost: boolean;
+  status: ChatRoomStatus;
+  retry: () => void;
   messages: MessageDto[];
   participants: ParticipantMap;
   unreadCountOf: (message: MessageDto) => number;
@@ -42,6 +46,8 @@ export function useChatRoom(roomId: string): ChatRoomState {
   const { subscribe, publish } = useStomp();
   const myId = Number(auth.userId);
 
+  const [status, setStatus] = useState<ChatRoomStatus>("loading");
+  const [reloadKey, setReloadKey] = useState(0);
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [participants, setParticipants] = useState<ParticipantMap>({});
   const [hasMore, setHasMore] = useState(true);
@@ -65,7 +71,6 @@ export function useChatRoom(roomId: string): ChatRoomState {
   // 방이 바뀌면 호출부가 key={roomId}로 컴포넌트를 다시 마운트하므로 상태 리셋은 필요 없다.
   useEffect(() => {
     let cancelled = false;
-
     Promise.all([
       chatApi.getParticipants(roomId),
       chatApi.getMessages(roomId, { limit: PAGE_SIZE }),
@@ -76,12 +81,20 @@ export function useChatRoom(roomId: string): ChatRoomState {
         // REST 응답 전에 STOMP로 먼저 도착한 메시지가 있을 수 있어 덮어쓰지 않고 합친다.
         setMessages((prev) => mergeByTsid(initialMessages, prev));
         setHasMore(initialMessages.length === PAGE_SIZE);
+        setStatus("ready");
         if (initialMessages.length > 0) {
           markRead(initialMessages[initialMessages.length - 1].messageTSID);
         }
       })
-      .catch((error) => console.error("채팅방 로드 실패:", error));
+      .catch(() => {
+        if (!cancelled) setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId, reloadKey, markRead]);
 
+  useEffect(() => {
     const messageSub = subscribe(`/sub/chatroom${roomId}`, (frame: IMessage) => {
       const message = JSON.parse(frame.body) as MessageDto;
       setMessages((prev) => mergeByTsid(prev, [message]));
@@ -101,12 +114,16 @@ export function useChatRoom(roomId: string): ChatRoomState {
     });
 
     return () => {
-      cancelled = true;
       messageSub.unsubscribe();
       readSub.unsubscribe();
       if (readTimerRef.current) clearTimeout(readTimerRef.current);
     };
   }, [roomId, subscribe, markRead]);
+
+  const retry = useCallback(() => {
+    setStatus("loading");
+    setReloadKey((k) => k + 1);
+  }, []);
 
   const loadOlder = useCallback(async () => {
     if (!hasMore || loadingOlder || messages.length === 0) return;
@@ -148,5 +165,17 @@ export function useChatRoom(roomId: string): ChatRoomState {
     return count;
   }, [participants, myId]);
 
-  return { myId, messages, participants, unreadCountOf, hasMore, loadingOlder, loadOlder, send };
+  return {
+    myId,
+    isHost: participants[myId]?.isHost ?? false,
+    status,
+    retry,
+    messages,
+    participants,
+    unreadCountOf,
+    hasMore,
+    loadingOlder,
+    loadOlder,
+    send,
+  };
 }
