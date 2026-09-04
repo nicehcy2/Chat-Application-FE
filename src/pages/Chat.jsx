@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useChatRoom } from "../hooks/useChatRoom";
+import { formatDate, formatTime, isSameDay } from "../utils/date";
 
 import SendButtonImage from "../assets/images/chat-send-button.png";
 import BackButtonImage from "../assets/images/back-button.png";
@@ -8,14 +9,6 @@ import ChatRankButtonImage from "../assets/images/chat-rank.png";
 import ChatOptionImage from "../assets/images/chat-option.png";
 
 const LOAD_OLDER_THRESHOLD_PX = 40;
-
-const formatTime = (timestamp) =>
-  new Date(timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
-
-const formatDate = (timestamp) =>
-  new Date(timestamp).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
-
-const isSameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
 
 export default function Chat() {
   const navigate = useNavigate();

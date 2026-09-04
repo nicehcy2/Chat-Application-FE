@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { chatApi } from "../api/chatApi";
+import { formatListTime } from "../utils/date";
 
 function ChatRoomList() {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ function ChatRoomList() {
                   </span>
                 </div>
                 <div>
-                  <span className="text-xs">{chatRoom.updatedAt}</span>
+                  <span className="text-xs text-gray-400">{formatListTime(chatRoom.updatedAt)}</span>
                 </div>
               </div>
               <div className="flex flex-row justify-between">
