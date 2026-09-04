@@ -3,16 +3,17 @@ import { requestFcmToken } from "../firebase";
 import { userApi } from "../api/userApi";
 import { useAuth } from "../contexts/AuthContext";
 
-export function useFcm() {
+export function useFcm(): void {
   const { auth } = useAuth();
+  const userId = auth.userId;
 
   useEffect(() => {
-    if (!auth.userId) return;
+    if (userId === null) return;
     requestFcmToken().then((token) => {
       if (!token) return;
       userApi
-        .registerFcmToken({ fcmToken: token, deviceType: "DESKTOP", userId: auth.userId })
+        .registerFcmToken({ fcmToken: token, deviceType: "DESKTOP", userId })
         .catch(() => {});
     });
-  }, [auth.userId]);
+  }, [userId]);
 }

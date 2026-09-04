@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { IMessage } from "@stomp/stompjs";
 import { chatApi } from "../api/chatApi";
+import type {
+  ChatRoomParticipantDto,
+  MessageDto,
+  MessageSendRequest,
+  ReadReceiptEvent,
+  ReadReceiptRequest,
+} from "../api/types";
 import { useAuth } from "../contexts/AuthContext";
 import { useStomp } from "../contexts/StompContext";
 
@@ -7,35 +15,48 @@ const PAGE_SIZE = 30;
 // 서버(ChatStompController)가 이 값을 전제로 설계됨. 연속 수신 시 읽음 발행을 한 번으로 묶는다.
 const READ_DEBOUNCE_MS = 300;
 
-// TSID는 2^53을 넘는 문자열이라 Number로 비교하면 정밀도가 깨진다.
-const tsid = (message) => BigInt(message.messageTSID);
+type ParticipantMap = Record<number, ChatRoomParticipantDto>;
 
-function mergeByTsid(...lists) {
-  const byId = new Map();
+// TSID는 2^53을 넘는 문자열이라 Number로 비교하면 정밀도가 깨진다.
+const tsid = (message: MessageDto): bigint => BigInt(message.messageTSID);
+
+function mergeByTsid(...lists: MessageDto[][]): MessageDto[] {
+  const byId = new Map<string, MessageDto>();
   lists.flat().forEach((message) => byId.set(message.messageTSID, message));
   return [...byId.values()].sort((a, b) => (tsid(a) < tsid(b) ? -1 : tsid(a) > tsid(b) ? 1 : 0));
 }
 
-export function useChatRoom(roomId) {
+export interface ChatRoomState {
+  myId: number;
+  messages: MessageDto[];
+  participants: ParticipantMap;
+  unreadCountOf: (message: MessageDto) => number;
+  hasMore: boolean;
+  loadingOlder: boolean;
+  loadOlder: () => Promise<void>;
+  send: (content: string) => boolean;
+}
+
+export function useChatRoom(roomId: string): ChatRoomState {
   const { auth } = useAuth();
   const { subscribe, publish } = useStomp();
   const myId = Number(auth.userId);
 
-  const [messages, setMessages] = useState([]);
-  const [participants, setParticipants] = useState({});
+  const [messages, setMessages] = useState<MessageDto[]>([]);
+  const [participants, setParticipants] = useState<ParticipantMap>({});
   const [hasMore, setHasMore] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
 
-  const readTimerRef = useRef(null);
-  const lastSentReadRef = useRef(null);
+  const readTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSentReadRef = useRef<string | null>(null);
 
-  const markRead = useCallback((messageId) => {
-    if (!messageId) return;
+  const markRead = useCallback((messageId: string) => {
     if (lastSentReadRef.current && BigInt(messageId) <= BigInt(lastSentReadRef.current)) return;
 
-    clearTimeout(readTimerRef.current);
+    if (readTimerRef.current) clearTimeout(readTimerRef.current);
     readTimerRef.current = setTimeout(() => {
-      if (publish(`/pub/chat.read.${roomId}`, { lastReadMessageId: messageId })) {
+      const payload: ReadReceiptRequest = { lastReadMessageId: messageId };
+      if (publish(`/pub/chat.read.${roomId}`, payload)) {
         lastSentReadRef.current = messageId;
       }
     }, READ_DEBOUNCE_MS);
@@ -64,14 +85,14 @@ export function useChatRoom(roomId) {
       })
       .catch((error) => console.error("채팅방 로드 실패:", error));
 
-    const messageSub = subscribe(`/sub/chatroom${roomId}`, (frame) => {
-      const message = JSON.parse(frame.body);
+    const messageSub = subscribe(`/sub/chatroom${roomId}`, (frame: IMessage) => {
+      const message = JSON.parse(frame.body) as MessageDto;
       setMessages((prev) => mergeByTsid(prev, [message]));
       markRead(message.messageTSID);
     });
 
-    const readSub = subscribe(`/sub/chatroom${roomId}.read`, (frame) => {
-      const { userId, lastReadMessageId } = JSON.parse(frame.body);
+    const readSub = subscribe(`/sub/chatroom${roomId}.read`, (frame: IMessage) => {
+      const { userId, lastReadMessageId } = JSON.parse(frame.body) as ReadReceiptEvent;
       setParticipants((prev) => {
         const participant = prev[userId];
         if (!participant) return prev;
@@ -86,7 +107,7 @@ export function useChatRoom(roomId) {
       cancelled = true;
       messageSub.unsubscribe();
       readSub.unsubscribe();
-      clearTimeout(readTimerRef.current);
+      if (readTimerRef.current) clearTimeout(readTimerRef.current);
     };
   }, [roomId, subscribe, markRead]);
 
@@ -107,24 +128,24 @@ export function useChatRoom(roomId) {
     }
   }, [roomId, hasMore, loadingOlder, messages]);
 
-  const send = useCallback((content) => {
+  const send = useCallback((content: string): boolean => {
     const text = content.trim();
     if (!text) return false;
-    return publish(`/pub/chat.message.${roomId}`, {
+    const payload: MessageSendRequest = {
       chatRoomId: Number(roomId),
       correlationId: crypto.randomUUID(),
       messageType: "TEXT",
       content: text,
-    });
+    };
+    return publish(`/pub/chat.message.${roomId}`, payload);
   }, [roomId, publish]);
 
   // 본인과 발신자는 당연히 읽은 것으로 보고 제외한다.
-  const unreadCountOf = useCallback((message) => {
+  const unreadCountOf = useCallback((message: MessageDto): number => {
     const id = tsid(message);
-    const senderId = Number(message.senderId);
     let count = 0;
     for (const participant of Object.values(participants)) {
-      if (participant.userId === myId || participant.userId === senderId) continue;
+      if (participant.userId === myId || participant.userId === message.senderId) continue;
       if (!participant.lastReadMessageId || BigInt(participant.lastReadMessageId) < id) count += 1;
     }
     return count;

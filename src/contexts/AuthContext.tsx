@@ -1,22 +1,36 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { configureAuth } from "../api/client";
 import { userApi } from "../api/userApi";
+import type { AuthSession } from "../api/types";
 
-const EMPTY_AUTH = { accessToken: null, sessionId: null, userId: null };
+export interface AuthState {
+  accessToken: string | null;
+  sessionId: string | null;
+  userId: number | null;
+}
 
-const AuthContext = createContext();
+interface AuthContextValue {
+  auth: AuthState;
+  setAuth: (next: AuthState) => void;
+  refresh: () => Promise<AuthSession | null>;
+  logout: () => Promise<void>;
+}
 
-export const AuthProvider = ({ children }) => {
-  const [auth, setAuthState] = useState(EMPTY_AUTH);
+const EMPTY_AUTH: AuthState = { accessToken: null, sessionId: null, userId: null };
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [auth, setAuthState] = useState<AuthState>(EMPTY_AUTH);
   const [loading, setLoading] = useState(true); // refresh가 끝나기 전에 ProtectedRoute가 /auth로 보내는 것을 막는다
-  const authRef = useRef(EMPTY_AUTH); // api/client가 렌더 사이클과 무관하게 최신 토큰을 읽기 위한 사본
+  const authRef = useRef<AuthState>(EMPTY_AUTH); // api/client가 렌더 사이클과 무관하게 최신 토큰을 읽기 위한 사본
 
-  const setAuth = (next) => {
+  const setAuth = (next: AuthState) => {
     authRef.current = next;
     setAuthState(next);
   };
 
-  const refresh = async () => {
+  const refresh = async (): Promise<AuthSession | null> => {
     try {
       const next = await userApi.refresh();
       setAuth(next);
@@ -51,7 +65,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;

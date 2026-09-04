@@ -1,0 +1,95 @@
+import { GATEWAY_SERVER_URL } from "../config";
+import type { AuthSession } from "./types";
+
+type Service = "user" | "chat";
+
+const SERVICE_PATH: Record<Service, string> = {
+  user: "/user-service",
+  chat: "/chat-api-service",
+};
+
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message?: string) {
+    super(message || `요청 실패 (${status})`);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+interface AuthHandler {
+  getAccessToken: () => string | null;
+  refresh: () => Promise<AuthSession | null>;
+}
+
+// AuthContext가 마운트 시 등록한다. 페이지는 토큰을 직접 다루지 않는다.
+let authHandler: AuthHandler = {
+  getAccessToken: () => null,
+  refresh: async () => null,
+};
+
+export function configureAuth(handler: AuthHandler): void {
+  authHandler = handler;
+}
+
+type Query = Record<string, string | number | boolean | null | undefined>;
+
+interface RequestOptions {
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  body?: unknown;
+  query?: Query;
+  /** false면 토큰을 붙이지 않고 401에도 refresh하지 않는다 (로그인·회원가입·refresh 자체) */
+  auth?: boolean;
+}
+
+function buildUrl(service: Service, path: string, query?: Query): string {
+  const url = new URL(`${SERVICE_PATH[service]}${path}`, GATEWAY_SERVER_URL);
+  if (query) {
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+    });
+  }
+  return url.toString();
+}
+
+function send(url: string, method: string, body: unknown, token: string | null): Promise<Response> {
+  return fetch(url, {
+    method,
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      ...(body !== undefined && { "Content-Type": "application/json" }),
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+}
+
+async function parse<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  return (text ? JSON.parse(text) : null) as T;
+}
+
+export async function request<T = void>(
+  service: Service,
+  path: string,
+  { method = "GET", body, query, auth = true }: RequestOptions = {},
+): Promise<T> {
+  const url = buildUrl(service, path, query);
+
+  let res = await send(url, method, body, auth ? authHandler.getAccessToken() : null);
+
+  if (res.status === 401 && auth) {
+    const fresh = await authHandler.refresh();
+    if (!fresh) throw new ApiError(401, "세션이 만료되었습니다.");
+    res = await send(url, method, body, fresh.accessToken);
+  }
+
+  if (!res.ok) {
+    const message = await res.text().catch(() => "");
+    throw new ApiError(res.status, message);
+  }
+
+  return parse<T>(res);
+}
