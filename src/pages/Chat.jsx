@@ -10,12 +10,17 @@ import ChatOptionImage from "../assets/images/chat-option.png";
 
 const LOAD_OLDER_THRESHOLD_PX = 40;
 
+// 방 ID가 바뀌면 useChatRoom의 상태(메시지·참여자·읽음 커서)를 전부 새로 시작해야 하므로 key로 다시 마운트한다.
 export default function Chat() {
-  const navigate = useNavigate();
   const { chatRoomId } = useParams();
+  return <ChatRoom key={chatRoomId} roomId={chatRoomId} />;
+}
+
+function ChatRoom({ roomId }) {
+  const navigate = useNavigate();
   const { state } = useLocation();
   const { myId, messages, participants, unreadCountOf, hasMore, loadingOlder, loadOlder, send } =
-    useChatRoom(chatRoomId);
+    useChatRoom(roomId);
 
   const [inputValue, setInputValue] = useState("");
   const listRef = useRef(null);

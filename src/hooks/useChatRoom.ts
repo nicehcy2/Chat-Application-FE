@@ -62,12 +62,9 @@ export function useChatRoom(roomId: string): ChatRoomState {
     }, READ_DEBOUNCE_MS);
   }, [roomId, publish]);
 
+  // 방이 바뀌면 호출부가 key={roomId}로 컴포넌트를 다시 마운트하므로 상태 리셋은 필요 없다.
   useEffect(() => {
     let cancelled = false;
-    setMessages([]);
-    setParticipants({});
-    setHasMore(true);
-    lastSentReadRef.current = null;
 
     Promise.all([
       chatApi.getParticipants(roomId),

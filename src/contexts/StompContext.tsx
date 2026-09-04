@@ -39,8 +39,12 @@ export function StompProvider({ children }: { children: ReactNode }) {
   // 살아 있는 구독 목록. 연결 전에 요청된 구독과 재연결 후 다시 붙여야 하는 구독을 함께 다룬다.
   const subscriptionsRef = useRef(new Set<SubscriptionEntry>());
 
-  tokenRef.current = auth.accessToken;
+  const accessToken = auth.accessToken;
   const userId = auth.userId;
+
+  useEffect(() => {
+    tokenRef.current = accessToken;
+  }, [accessToken]);
 
   useEffect(() => {
     if (userId === null) return;

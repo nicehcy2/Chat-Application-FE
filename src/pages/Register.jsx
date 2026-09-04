@@ -44,7 +44,7 @@ export default function Register() {
             }
             setEmailChecked(true);
             setEmailError("");
-        } catch (error) {
+        } catch {
             setEmailError("이메일 확인 중 오류가 발생했습니다.");
         }
     };

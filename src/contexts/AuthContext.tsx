@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { configureAuth } from "../api/client";
 import { userApi } from "../api/userApi";
 import type { AuthSession } from "../api/types";
@@ -25,12 +33,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true); // refresh가 끝나기 전에 ProtectedRoute가 /auth로 보내는 것을 막는다
   const authRef = useRef<AuthState>(EMPTY_AUTH); // api/client가 렌더 사이클과 무관하게 최신 토큰을 읽기 위한 사본
 
-  const setAuth = (next: AuthState) => {
+  const setAuth = useCallback((next: AuthState) => {
     authRef.current = next;
     setAuthState(next);
-  };
+  }, []);
 
-  const refresh = async (): Promise<AuthSession | null> => {
+  const refresh = useCallback(async (): Promise<AuthSession | null> => {
     try {
       const next = await userApi.refresh();
       setAuth(next);
@@ -39,22 +47,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setAuth(EMPTY_AUTH);
       return null;
     }
-  };
+  }, [setAuth]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     // 서버 호출이 실패해도 클라이언트 상태는 비운다. 쿠키는 다음 refresh 실패로 자연히 정리된다.
     await userApi.logout().catch(() => {});
     setAuth(EMPTY_AUTH);
-  };
+  }, [setAuth]);
 
   useEffect(() => {
     configureAuth({
       getAccessToken: () => authRef.current.accessToken,
       refresh,
     });
-    refresh().finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    userApi
+      .refresh()
+      .then((next) => setAuth(next))
+      .catch(() => setAuth(EMPTY_AUTH))
+      .finally(() => setLoading(false));
+  }, [refresh, setAuth]);
 
   if (loading) return null;
 
