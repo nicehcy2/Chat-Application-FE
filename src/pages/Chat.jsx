@@ -1,142 +1,135 @@
-import React, { useRef, useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { useStomp } from "../contexts/StompContext";
-import { chatApi } from "../api/chatApi";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useChatRoom } from "../hooks/useChatRoom";
 
 import SendButtonImage from "../assets/images/chat-send-button.png";
 import BackButtonImage from "../assets/images/back-button.png";
 import ChatRankButtonImage from "../assets/images/chat-rank.png";
 import ChatOptionImage from "../assets/images/chat-option.png";
 
+const LOAD_OLDER_THRESHOLD_PX = 40;
+
+const formatTime = (timestamp) =>
+  new Date(timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+const formatDate = (timestamp) =>
+  new Date(timestamp).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
+
+const isSameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+
 export default function Chat() {
-  const bottomRef = useRef(null);
   const navigate = useNavigate();
-  const { auth } = useAuth();
-  const { subscribe, publish } = useStomp();
+  const { chatRoomId } = useParams();
+  const { state } = useLocation();
+  const { myId, messages, participants, unreadCountOf, hasMore, loadingOlder, loadOlder, send } =
+    useChatRoom(chatRoomId);
 
-  const [messages, setMessages] = useState([]); // 메시지 저장 상태
-  const [inputValue, setInputValue] = useState(""); // 사용자 입력 상태
-  const { chatRoomId } = useParams(); // 채팅방 ID
-  const [chatRoomTitle, setChatRoomTitle] = useState("");
-  const [participationCount, setParticipationCount] = useState("");
+  const [inputValue, setInputValue] = useState("");
+  const listRef = useRef(null);
+  const bottomRef = useRef(null);
+  const lastTsidRef = useRef(null);
+  const scrollHeightBeforePrependRef = useRef(null);
 
-  // 메시지 전송
-  const sendMessage = () => {
-    if (inputValue && publish(`/pub/chat.message.${chatRoomId}`, {
-      chatRoomId: Number(chatRoomId),
-      correlationId: crypto.randomUUID(), // 전송 확인용 클라이언트 생성 UUID
-      messageType: "TEXT",
-      content: inputValue,
-      // senderId는 서버가 세션(JWT)의 userId로 채우므로 보내지 않는다
-    })) {
-      setInputValue("");
+  const title = state?.title ?? "";
+  const participantCount = Object.keys(participants).length || state?.participationCount || "";
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list || messages.length === 0) return;
+
+    if (scrollHeightBeforePrependRef.current !== null) {
+      list.scrollTop += list.scrollHeight - scrollHeightBeforePrependRef.current;
+      scrollHeightBeforePrependRef.current = null;
+      return;
     }
+
+    const lastTsid = messages[messages.length - 1].messageTSID;
+    if (lastTsid !== lastTsidRef.current) {
+      lastTsidRef.current = lastTsid;
+      bottomRef.current?.scrollIntoView();
+    }
+  }, [messages]);
+
+  const handleScroll = (e) => {
+    const list = e.currentTarget;
+    if (list.scrollTop > LOAD_OLDER_THRESHOLD_PX || !hasMore || loadingOlder) return;
+    scrollHeightBeforePrependRef.current = list.scrollHeight;
+    loadOlder();
   };
 
-  useEffect(() => {
-    const subscription = subscribe(`/sub/chatroom${chatRoomId}`, (message) => {
-      const newMessage = JSON.parse(message.body);
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
-    });
-    chatApi.getMessages(chatRoomId)
-      .then(setMessages)
-      .catch((error) => console.error("메시지 조회 실패:", error));
-    return () => subscription.unsubscribe();
-  }, [chatRoomId, subscribe]);
+  const handleSend = () => {
+    if (send(inputValue)) setInputValue("");
+  };
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView();
-  }, [messages.length]);
+  const handleKeyDown = (e) => {
+    // 한글 입력 중 Enter는 조합 확정이므로 전송하지 않는다.
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   return (
     <div className="flex flex-col h-full tracking-tight">
       <div className="flex flex-row justify-between h-[56px] items-center">
         <div className="flex flex-row h-full items-center gap-1 p-4">
-          <img
-            src={BackButtonImage}
-            alt="뒤로가기 버튼"
-            className="w-5 h-5"
-            onClick={() => navigate(-1)}
-          ></img>
-          <span className="text-xl font-bold px-2">
-            {chatRoomTitle}무지출이 대세다
-          </span>
-          <span className="text-sm font-bold text-primary-dark">
-            {participationCount}35
-          </span>
+          <img src={BackButtonImage} alt="뒤로가기" className="w-5 h-5" onClick={() => navigate(-1)} />
+          <span className="text-xl font-bold px-2">{title}</span>
+          <span className="text-sm font-bold text-primary-dark">{participantCount}</span>
         </div>
         <div className="flex flex-row gap-3 h-full items-center p-4">
-          <img
-            src={ChatRankButtonImage}
-            alt="채팅 랭크 이미지"
-            className="w-4 h-6"
-          ></img>
-          <img
-            src={ChatOptionImage}
-            alt="채팅 옵션 이미지"
-            className="w-5 h-4"
-          ></img>
+          <img src={ChatRankButtonImage} alt="채팅 랭크" className="w-4 h-6" />
+          <img src={ChatOptionImage} alt="채팅 옵션" className="w-5 h-4" />
         </div>
       </div>
-      {/* 메시지 영역 */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-3">
-          {messages.map((msg, index) => {
-            const isMyMessage = msg.senderId === auth.userId;
-            const showProfile =
-              !isMyMessage &&
-              (index === 0 || messages[index - 1].senderId !== msg.senderId);
 
-            const timestamp = (
+      <div ref={listRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+        <div className="p-3">
+          {loadingOlder && <div className="text-center text-xs text-gray-400 py-2">이전 메시지 불러오는 중</div>}
+
+          {messages.map((msg, index) => {
+            const prev = messages[index - 1];
+            const isMyMessage = Number(msg.senderId) === myId;
+            const showDate = !prev || !isSameDay(prev.timestamp, msg.timestamp);
+            const showProfile = !isMyMessage && (showDate || Number(prev.senderId) !== Number(msg.senderId));
+            const sender = participants[msg.senderId];
+            const nickname = msg.nickname ?? sender?.nickname ?? msg.senderId;
+            const imageUrl = msg.senderImageUrl ?? sender?.imageUrl;
+            const unread = unreadCountOf(msg);
+
+            const meta = (
               <div className="flex flex-col justify-end">
-                {/* TODO: msg 타입에 따라서 형식 다르게 하기 */}
-                {/* TODO: 날짜 텍스트 만들기(날짜 변경 후 첫번째 채팅이 오면 그 위에 적용) */}
-                <div className="text-primary text-[9px] leading-none">
-                  {msg.unreadCount}
-                </div>
-                <div className="text-[9px]">
-                  {new Date(msg.timestamp).toLocaleTimeString("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                  })}
-                </div>
+                {unread > 0 && <div className="text-primary text-[9px] leading-none">{unread}</div>}
+                <div className="text-[9px]">{formatTime(msg.timestamp)}</div>
               </div>
             );
 
             return (
-              <div
-                key={msg.messageTSID}
-                className={`flex gap-2 ${showProfile && index !== 0 ? "mt-3" : "mt-1"} ${isMyMessage ? "justify-end" : ""}`}
-              >
-                {/* Profile Image - 내 메시지면 숨김 */}
-                {!isMyMessage &&
-                  (showProfile ? (
-                    <div className="w-12 h-12 border rounded-2xl bg-red-400 shrink-0"></div>
-                  ) : (
-                    <div className="w-12 shrink-0"></div>
-                  ))}
+              <div key={msg.messageTSID}>
+                {showDate && (
+                  <div className="text-center text-[11px] text-gray-400 my-3">{formatDate(msg.timestamp)}</div>
+                )}
+                <div className={`flex gap-2 ${showProfile && !showDate ? "mt-3" : "mt-1"} ${isMyMessage ? "justify-end" : ""}`}>
+                  {!isMyMessage &&
+                    (showProfile ? (
+                      imageUrl ? (
+                        <img src={imageUrl} alt="" className="w-12 h-12 rounded-2xl object-cover shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 border rounded-2xl bg-gray-200 shrink-0" />
+                      )
+                    ) : (
+                      <div className="w-12 shrink-0" />
+                    ))}
 
-                <div className="flex flex-col gap-1 text-sm">
-                  {/* User Name - 내 메시지면 숨김 */}
-                  {showProfile && (
-                    <div>
-                      <strong>{msg.senderId}</strong>
+                  <div className="flex flex-col gap-1 text-sm">
+                    {showProfile && <strong>{nickname}</strong>}
+                    <div className="flex flex-row gap-2">
+                      {isMyMessage && meta}
+                      <div className={`px-3 py-2 border rounded-xl max-w-[300px] text-[16px] ${isMyMessage ? "bg-primary text-white" : "bg-gray-50"}`}>
+                        {msg.messageType === "TEXT" ? msg.content : `[${msg.messageType}]`}
+                      </div>
+                      {!isMyMessage && meta}
                     </div>
-                  )}
-
-                  <div className="flex flex-row gap-2">
-                    {/* 내 메시지면 timestamp가 버블 왼쪽 */}
-                    {isMyMessage && timestamp}
-                    {/* Message Content */}
-                    <div
-                      className={`px-3 py-2 border rounded-xl max-w-[300px] text-[16px] ${isMyMessage ? "bg-primary text-white" : "bg-gray-50"}`}
-                    >
-                      {msg.content}
-                    </div>
-                    {/* 상대 메시지면 timestamp가 버블 오른쪽 */}
-                    {!isMyMessage && timestamp}
                   </div>
                 </div>
               </div>
@@ -146,7 +139,6 @@ export default function Chat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* 입력 영역 */}
       <div className="flex flex-row justify-end py-2 px-4 gap-1">
         <input
           type="text"
@@ -154,9 +146,10 @@ export default function Chat() {
           className="w-[264px] h-[32px] border rounded-full px-3 py-4"
           placeholder="메시지를 입력하세요"
           onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
-        <button onClick={sendMessage}>
-          <img src={SendButtonImage} alt="전송"></img>
+        <button onClick={handleSend}>
+          <img src={SendButtonImage} alt="전송" />
         </button>
       </div>
     </div>

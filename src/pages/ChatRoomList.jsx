@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import { chatApi } from "../api/chatApi";
 
 function ChatRoomList() {
   const navigate = useNavigate();
-  const { auth } = useAuth();
   const [chatRoomList, setChatRoomList] = useState([]);
   const [fabOpen, setFabOpen] = useState(false);
 
   useEffect(() => {
-    chatApi.getRooms(auth.userId)
+    chatApi.getRooms()
       .then(setChatRoomList)
       .catch((error) => console.error("채팅방 목록 조회 실패:", error));
-  }, [auth.userId]);
+  }, []);
 
   if (chatRoomList.length === 0) {
     return (
@@ -33,7 +31,7 @@ function ChatRoomList() {
         {chatRoomList.map((chatRoom) => (
           <div
             key={chatRoom.chatRoomId}
-            onClick={() => navigate(`/chats/${chatRoom.chatRoomId}`)}
+            onClick={() => navigate(`/chats/${chatRoom.chatRoomId}`, { state: { title: chatRoom.chatRoomTitle, participationCount: chatRoom.participationCount } })}
             className="
             flex gap-4
             cursor-pointer hover:bg-gray-50
