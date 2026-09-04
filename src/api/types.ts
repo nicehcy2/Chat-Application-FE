@@ -95,6 +95,18 @@ export interface ChatRoomInfoResponseDto {
   updatedAt: string | null;
 }
 
+export type RoomVisibility = "PUBLIC" | "APPROVAL";
+
+// TODO(서버): POST /api/chats 구현 시 실제 요청 필드명에 맞춰 조정
+export interface CreateRoomRequest {
+  title: string;
+  description: string;
+  dailyLimit: number;
+  maxParticipants: number;
+  visibility: RoomVisibility;
+  imageUrl?: string;
+}
+
 // ===== chat-service (STOMP) =====
 
 export interface ReadReceiptEvent {

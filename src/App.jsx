@@ -15,6 +15,7 @@ import ChatCreate from "./pages/ChatCreate";
 import Chat from "./pages/Chat";
 import MyPage from "./pages/MyPage";
 import EditProfile from "./pages/EditProfile";
+import NotFound from "./pages/NotFound";
 
 function App() {
   useFcm();
@@ -42,6 +43,7 @@ function App() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </BrowserRouter>

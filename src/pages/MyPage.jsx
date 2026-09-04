@@ -68,7 +68,7 @@ export default function MyPage() {
             </div>
             <div className="flex flex-col bg-white px-4 py-4 gap-6">
                 {PENDING_MENUS.map((label) => (
-                    <div key={label} className="text-base text-gray-400">{label}</div>
+                    <div key={label} className="text-base text-inkDisabled pointer-events-none">{label}</div>
                 ))}
                 <div className="text-base cursor-pointer" onClick={logout}>로그아웃</div>
             </div>

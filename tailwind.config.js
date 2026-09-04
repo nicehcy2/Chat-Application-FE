@@ -17,6 +17,10 @@ module.exports = {
                 mintSoft: "#CFEFEB",       // 썸네일 플레이스홀더
                 danger: "#E5484D",         // 치명 이슈, 초과 표시
                 dangerBar: "#F2A0A0",      // 목표 초과 바
+                dangerDeep: "#C42B30",     // 에러 카드 아이콘 글자
+                dangerSoft: "#F9E1E1",     // 에러 카드 아이콘 배경
+                dangerTintBg: "#FDF4F4",   // 에러 카드 배경
+                dangerLine: "#F3DADA",     // 에러 카드 보더
                 warn: "#F5A524",
                 ink: "#17161C",            // 본문 최고 대비
                 inkMid: "#4B4854",         // 칩·부제

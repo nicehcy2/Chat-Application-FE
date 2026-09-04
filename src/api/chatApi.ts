@@ -1,5 +1,10 @@
 import { request } from "./client";
-import type { ChatRoomInfoResponseDto, ChatRoomParticipantDto, MessageDto } from "./types";
+import type {
+  ChatRoomInfoResponseDto,
+  ChatRoomParticipantDto,
+  CreateRoomRequest,
+  MessageDto,
+} from "./types";
 
 interface MessagePageQuery {
   /** 이 messageTSID 이전 메시지만. 생략하면 최신부터. */
@@ -18,4 +23,8 @@ export const chatApi = {
 
   getParticipants: (roomId: string | number) =>
     request<ChatRoomParticipantDto[]>("chat", `/api/chats/${roomId}/participants`),
+
+  // TODO(서버): 아직 미구현. 응답은 생성된 chatRoomId로 가정.
+  createRoom: (payload: CreateRoomRequest) =>
+    request<number>("chat", "/api/chats", { method: "POST", body: payload }),
 };
