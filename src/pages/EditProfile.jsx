@@ -2,15 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../components/BackButton";
 import NicknameInput from "../components/NicknameInput";
-import { useAuthFetch } from "../hooks/useAuthFetch";
 import LabeledSelect from "../components/LabeledSelect";
 import { useAuth } from "../contexts/AuthContext";
-import { GATEWAY_SERVER_URL } from "../config";
+import { userApi } from "../api/userApi";
 
 const GENDER_OPTIONS = ["여자", "남자"];
 const AGE_OPTIONS = ["14~19세", "20대", "30대", "40대", "50대", "60대 이상"];
 const JOB_OPTIONS = ["학생", "직장인", "주부", "자영업자"];
-const SAVE_PROFILE_URL = `${GATEWAY_SERVER_URL}/user-service/users/profile/edit`;
 
 export default function EditProfile() {
   const [nickname, setNickname] = useState("");
@@ -19,8 +17,6 @@ export default function EditProfile() {
   const [job, setJob] = useState("");
   const { auth } = useAuth();
   const navigate = useNavigate();
-
-  const authFetch = useAuthFetch();
 
   const saveEditProfile = async () => {
 
@@ -43,25 +39,16 @@ export default function EditProfile() {
     };
 
     try {
-      console.log(jobGroupMap[job]);
-      const response = await authFetch(
-        `${SAVE_PROFILE_URL}?userId=${auth.userId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ nickname, gender:genderCode, ageGroup: ageGroupMap[age], jobGroup: jobGroupMap[job], imageUrl: "image.jpg" }),
-        },
-      );
-      if (response.ok) {
-        navigate("/mypage");
-        console.log("프로필 저장 성공");
-      } else {
-        console.error("프로필 저장 실패:", response.status);
-      }
+      await userApi.editProfile(auth.userId, {
+        nickname,
+        gender: genderCode,
+        ageGroup: ageGroupMap[age],
+        jobGroup: jobGroupMap[job],
+        imageUrl: "image.jpg",
+      });
+      navigate("/mypage");
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      console.error("프로필 저장 실패:", error);
     }
   }
 

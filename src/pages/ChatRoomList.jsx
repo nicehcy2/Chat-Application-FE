@@ -1,35 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useAuthFetch } from "../hooks/useAuthFetch";
-import { GATEWAY_SERVER_URL } from "../config";
-
-const CHATROOM_LIST_URL = `${GATEWAY_SERVER_URL}/chat-api-service/api/chats?userId=`;
+import { chatApi } from "../api/chatApi";
 
 function ChatRoomList() {
   const navigate = useNavigate();
-  const { auth } = useAuth(); 
-  const AuthFetch = useAuthFetch();
+  const { auth } = useAuth();
   const [chatRoomList, setChatRoomList] = useState([]);
   const [fabOpen, setFabOpen] = useState(false);
 
   useEffect(() => {
-
-    const fetchChatRooms = async () => {
-      try {
-        const response = await AuthFetch(`${CHATROOM_LIST_URL}${auth.userId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setChatRoomList(data);
-          console.log("fetch chat rooms successed.");
-        } else {
-          console.error("Failed to fetch chat rooms:", response.status);
-        }
-      } catch (error) {
-        console.error("Error fetching chat rooms:", error);
-      }
-    };
-    fetchChatRooms();
+    chatApi.getRooms(auth.userId)
+      .then(setChatRoomList)
+      .catch((error) => console.error("채팅방 목록 조회 실패:", error));
   }, [auth.userId]);
 
   if (chatRoomList.length === 0) {

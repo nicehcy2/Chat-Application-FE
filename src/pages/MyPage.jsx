@@ -3,33 +3,18 @@ import { useNavigate } from "react-router-dom";
 import Logo from "../assets/images/logo.png"
 import GoldImage from "../assets/images/gold.png"
 import { useAuth } from "../contexts/AuthContext";
-import { useAuthFetch } from "../hooks/useAuthFetch";
-import { GATEWAY_SERVER_URL } from "../config";
-
-const USER_INFO_URL = `${GATEWAY_SERVER_URL}/user-service/users`;
+import { userApi } from "../api/userApi";
 
 export default function MyPage() {
 
     const [user, setUser] = useState({});
     const { auth } = useAuth();
-    const authFetch = useAuthFetch();
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const response = await authFetch(`${USER_INFO_URL}/${auth.userId}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setUser(data);
-                } else {
-                    console.error("유저 정보 조회 실패:", response.status);
-                }
-            } catch (error) {
-                console.error("유저 정보 조회 에러:", error);
-            }
-        };
-        fetchUser();
+        userApi.getUser(auth.userId)
+            .then(setUser)
+            .catch((error) => console.error("유저 정보 조회 실패:", error));
     }, [auth.userId]);
 
     return (

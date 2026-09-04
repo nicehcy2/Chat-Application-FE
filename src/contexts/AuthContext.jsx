@@ -1,37 +1,44 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Stomp } from "@stomp/stompjs";
 import { requestFcmToken } from "../firebase";
-import { WEBSOCKET_URL, GATEWAY_SERVER_URL } from "../config";
+import { WEBSOCKET_URL } from "../config";
+import { configureAuth } from "../api/client";
+import { userApi } from "../api/userApi";
 
-const AuthContext = createContext(); // 전역으로 공유할 수 있는 파이프를 만드는 함수
+const EMPTY_AUTH = { accessToken: null, sessionId: null, userId: null };
+
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [auth, setAuth] = useState({
-    accessToken: null,
-    sessionId: null,
-    userId: null,
-  });
-  const [loading, setLoading] = useState(true); // loading으로 refresh가 호출되기 전에 auth로 넘어가는 것을 막음.
+  const [auth, setAuthState] = useState(EMPTY_AUTH);
+  const [loading, setLoading] = useState(true); // refresh가 끝나기 전에 ProtectedRoute가 /auth로 보내는 것을 막는다
+  const authRef = useRef(EMPTY_AUTH); // api/client가 렌더 사이클과 무관하게 최신 토큰을 읽기 위한 사본
   const stompClient = useRef(null);
 
-  const REFRESH_URL = "/user-service/refresh";
-  const FCM_TOKEN_URL = "/user-service/api/v1/users/fcm/token";
+  const setAuth = (next) => {
+    authRef.current = next;
+    setAuthState(next);
+  };
 
-  const registerFcmToken = async (accessToken, userId) => {
+  const refresh = async () => {
+    try {
+      const next = await userApi.refresh();
+      setAuth(next);
+      return next;
+    } catch {
+      setAuth(EMPTY_AUTH);
+      return null;
+    }
+  };
+
+  const registerFcmToken = async (userId) => {
     const token = await requestFcmToken();
     if (!token) return;
-    fetch(`${GATEWAY_SERVER_URL}${FCM_TOKEN_URL}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ fcmToken: token, deviceType: "DESKTOP", userId }),
-    });
+    userApi.registerFcmToken({ fcmToken: token, deviceType: "DESKTOP", userId }).catch(() => {});
   };
 
   const connectWebSocket = (accessToken) => {
-    if (stompClient.current?.connected) return; // 이미 연결되어 있으면 스킵
+    if (stompClient.current?.connected) return;
     const socket = new WebSocket(WEBSOCKET_URL);
     stompClient.current = Stomp.over(socket);
     stompClient.current.connect(
@@ -67,18 +74,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    fetch(`${GATEWAY_SERVER_URL}${REFRESH_URL}`, {
-      method: "POST",
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then(({ accessToken, sessionId, userId }) => {
-        setAuth({ accessToken, sessionId, userId });
-        connectWebSocket(accessToken);
-        registerFcmToken(accessToken, userId);
+    configureAuth({
+      getAccessToken: () => authRef.current.accessToken,
+      refresh,
+    });
+
+    refresh()
+      .then((next) => {
+        if (!next) return;
+        connectWebSocket(next.accessToken);
+        registerFcmToken(next.userId);
       })
-      .catch(() => {})
-      .finally(() => setLoading(false)); // loading 값이 바뀌면서 재렌더링.
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) return null;
@@ -88,6 +96,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         auth,
         setAuth,
+        refresh,
         connectWebSocket,
         disconnectWebSocket,
         subscribe,

@@ -3,9 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext"
 import CompleteButton from "../components/CompleteButton";
 import BackButton from "../components/BackButton";
-import { GATEWAY_SERVER_URL } from "../config";
-
-const URL = `${GATEWAY_SERVER_URL}/user-service/login`;
+import { userApi } from "../api/userApi";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,24 +17,10 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const res = await fetch(`${URL}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        credentials: "include", // 쿠키 받기/보내기
-        body: JSON.stringify({ email, password }),
-      });
+      const { accessToken, sessionId, userId } = await userApi.login(email, password);
 
-      if (!res.ok) {
-        throw new Error("login failed");
-      }
-
-      const { accessToken, sessionId, userId } = await res.json(); // { accessToken, userId }
-
-      setAuth({ accessToken, sessionId, userId }); // chats에서 사용할 인증 값
-      connectWebSocket(accessToken); // 로그인 시점에 연결
+      setAuth({ accessToken, sessionId, userId });
+      connectWebSocket(accessToken);
 
       navigate("/chats");
     } catch (error) {

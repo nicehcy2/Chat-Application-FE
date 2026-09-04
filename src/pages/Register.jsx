@@ -4,14 +4,11 @@ import BackButton from "../components/BackButton";
 import LabeledInput from "../components/LabeledInput";
 import LabeledSelect from "../components/LabeledSelect";
 import CompleteButton from "../components/CompleteButton";
-import { GATEWAY_SERVER_URL } from "../config";
+import { userApi } from "../api/userApi";
 
 const maxNicknameLen = 20;
 const maxEmailLen = 100;
 const maxPasswordLen = 20;
-
-const REGISTER_URL = "/user-service/signup";
-
 
 export default function Register() {
 
@@ -35,9 +32,7 @@ export default function Register() {
             return;
         }
         try {
-            const res = await fetch(`${GATEWAY_SERVER_URL}${REGISTER_URL}/email/check?email=${email}`);
-            console.log(res);
-            const isDuplicate = await res.json();
+            const isDuplicate = await userApi.checkEmail(email);
             if (isDuplicate) {
                 setEmailError("이미 사용 중인 이메일입니다.");
                 return;
@@ -93,30 +88,20 @@ export default function Register() {
             "자영업자": "SELF_EMPLOYED",
         };
 
-        const res = await fetch(GATEWAY_SERVER_URL + REGISTER_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify({
-                  email,
-                  password,
-                  nickname,
-                  birthDay,
-                  gender: genderCode,
-                  userRole: "USER",
-                  ageGroup: ageGroupMap[ageGroup] ?? "UNDECIDED",
-                  jobGroup: jobGroupMap[job] ?? "UNDECIDED",
-                  imageUrl: "image.url",
-                  reward: 0,
-                  status: true,
-                  dayTargetExpenditure: 0,
-                }),
-            })
-
-            if (!res.ok) throw new Error("register failed");
+        await userApi.signup({
+              email,
+              password,
+              nickname,
+              birthDay,
+              gender: genderCode,
+              userRole: "USER",
+              ageGroup: ageGroupMap[ageGroup] ?? "UNDECIDED",
+              jobGroup: jobGroupMap[job] ?? "UNDECIDED",
+              imageUrl: "image.url",
+              reward: 0,
+              status: true,
+              dayTargetExpenditure: 0,
+            });
 
             navigate("/chats");
         } catch (error) {

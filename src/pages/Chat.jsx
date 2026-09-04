@@ -1,21 +1,17 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useAuthFetch } from "../hooks/useAuthFetch";
+import { chatApi } from "../api/chatApi";
 
 import SendButtonImage from "../assets/images/chat-send-button.png";
 import BackButtonImage from "../assets/images/back-button.png";
 import ChatRankButtonImage from "../assets/images/chat-rank.png";
 import ChatOptionImage from "../assets/images/chat-option.png";
-import { GATEWAY_SERVER_URL } from "../config";
-
-const CHAT_APISERVER_URL = "/chat-api-service";
 
 export default function Chat() {
   const bottomRef = useRef(null);
   const navigate = useNavigate();
-  const { auth, subscribe, publish } = useAuth(); // { accessToken, userId }
-  const authFetch = useAuthFetch(); // 요청 할 때 401 뜨면 refresh
+  const { auth, subscribe, publish } = useAuth();
 
   const [messages, setMessages] = useState([]); // 메시지 저장 상태
   const [inputValue, setInputValue] = useState(""); // 사용자 입력 상태
@@ -36,37 +32,15 @@ export default function Chat() {
     }
   };
 
-  const fetchMessages = async () => {
-    try {
-      const response = await authFetch(
-        `${GATEWAY_SERVER_URL}${CHAT_APISERVER_URL}/api/chats/${chatRoomId}/messages/test`,
-        {
-          headers: {
-            Authorization: `Bearer ${auth.accessToken}`,
-            Accept: "application/json",
-          },
-        },
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data); // 기존 메시지 설정
-        console.log("fetch successed.");
-      } else {
-        console.error("Failed to fetch messages:", response.status);
-      }
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  };
-
-  // React 컴포넌트가 렌더링될 때 WebSocket 연결
   useEffect(() => {
     const subscription = subscribe(`/sub/chatroom${chatRoomId}`, (message) => {
       const newMessage = JSON.parse(message.body);
       setMessages((prevMessages) => [...prevMessages, newMessage]);
     });
-    fetchMessages(); // 기존 메시지 가져오기
-    return () => subscription?.unsubscribe(); // 컴포넌트가 언마운트될 때 연결 해제
+    chatApi.getMessages(chatRoomId)
+      .then(setMessages)
+      .catch((error) => console.error("메시지 조회 실패:", error));
+    return () => subscription?.unsubscribe();
   }, [chatRoomId]);
 
   useEffect(() => {
