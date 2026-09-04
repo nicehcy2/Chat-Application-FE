@@ -85,7 +85,7 @@ export default function Register() {
               jobGroup: jobGroup || UNDECIDED,
             });
 
-            navigate("/chats");
+            navigate("/login", { replace: true });
         } catch (error) {
             console.log(error);
         }

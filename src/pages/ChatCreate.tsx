@@ -1,73 +1,95 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../components/BackButton";
-import LabeledInput from "../components/LabeledInput";
 import CompleteButton from "../components/CompleteButton";
 import { chatApi } from "../api/chatApi";
 import { ApiError } from "../api/client";
-import type { RoomVisibility } from "../api/types";
+import type { AgeGroup, JobGroup } from "../api/types";
+import { JOB_GROUP_OPTIONS } from "../constants/user";
 
-const NAME_MAX_LEN = 20;
-const LIMIT_STEP = 1_000;
-const LIMIT_MIN = 1_000;
-const LIMIT_PRESETS = [10_000, 15_000, 20_000];
+const TITLE_MIN = 2;
+const TITLE_MAX = 20;
+const INTRO_MAX = 100;
 const MEMBER_PRESETS = [10, 30, 50, 100];
-const SECTION_COUNT = 5;
+const LIMIT_MIN = 5_000;
+const LIMIT_MAX = 50_000;
+const LIMIT_STEP = 1_000;
+const PASSWORD_LEN = 4;
 
-const VISIBILITY_OPTIONS: { value: RoomVisibility; title: string; description: string }[] = [
-  { value: "PUBLIC", title: "공개", description: "둘러보기에 노출되고 누구나 바로 참여" },
-  { value: "APPROVAL", title: "승인제", description: "참여 신청을 방장이 승인" },
+// 탐색 필터와 같은 축. "50대+"는 서버 enum 두 개를 묶는다.
+const AGE_CHIPS: { label: string; values: AgeGroup[] }[] = [
+  { label: "20대", values: ["TWENTIES"] },
+  { label: "30대", values: ["THIRTIES"] },
+  { label: "40대", values: ["FORTIES"] },
+  { label: "50대+", values: ["FIFTIES", "SIXTIES_AND_ABOVE"] },
 ];
 
 const won = (n: number) => n.toLocaleString("ko-KR");
 
+interface FieldErrors {
+  title?: string;
+  password?: string;
+}
+
 export default function ChatCreate() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [intro, setIntro] = useState("");
-  const [dailyLimit, setDailyLimit] = useState(15_000);
   const [maxMembers, setMaxMembers] = useState(30);
-  const [visibility, setVisibility] = useState<RoomVisibility>("PUBLIC");
-  // 기본값이 있는 섹션은 사용자가 건드렸을 때만 "채워진" 것으로 센다.
-  const [touched, setTouched] = useState({ limit: false, members: false, visibility: false });
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [password, setPassword] = useState("");
+  const [ageGroups, setAgeGroups] = useState<AgeGroup[]>([]);
+  const [jobGroups, setJobGroups] = useState<JobGroup[]>([]);
+  const [dailyLimit, setDailyLimit] = useState(15_000);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
 
-  const filledCount =
-    Number(name.trim().length > 0) +
-    Number(intro.trim().length > 0) +
-    Number(touched.limit) +
-    Number(touched.members) +
-    Number(touched.visibility);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const passwordRef = useRef<HTMLDivElement>(null);
 
-  const changeLimit = (next: number) => {
-    setDailyLimit(Math.max(LIMIT_MIN, next));
-    setTouched((t) => ({ ...t, limit: true }));
-  };
-  const changeMembers = (next: number) => {
-    setMaxMembers(next);
-    setTouched((t) => ({ ...t, members: true }));
-  };
-  const changeVisibility = (next: RoomVisibility) => {
-    setVisibility(next);
-    setTouched((t) => ({ ...t, visibility: true }));
+  const toggleAge = (values: AgeGroup[]) =>
+    setAgeGroups((prev) => {
+      const has = values.every((v) => prev.includes(v));
+      return has ? prev.filter((v) => !values.includes(v)) : [...prev, ...values.filter((v) => !prev.includes(v))];
+    });
+
+  const toggleJob = (value: JobGroup) =>
+    setJobGroups((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+
+  const validate = (): FieldErrors => {
+    const next: FieldErrors = {};
+    const t = title.trim();
+    if (t.length === 0) next.title = "제목을 입력해 주세요";
+    else if (t.length < TITLE_MIN || t.length > TITLE_MAX) next.title = `${TITLE_MIN}~${TITLE_MAX}자로 입력해 주세요`;
+    if (isPrivate && !/^\d{4}$/.test(password)) next.password = "4자리 숫자를 입력해 주세요";
+    return next;
   };
 
   const submit = async () => {
-    if (!name.trim() || submitting) return;
+    if (submitting) return;
+    const next = validate();
+    setErrors(next);
+    if (next.title) return titleRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (next.password) return passwordRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+
     setSubmitting(true);
-    setError("");
+    setSubmitError("");
     try {
       const newId = await chatApi.createRoom({
-        title: name.trim(),
+        title: title.trim(),
         description: intro.trim(),
-        dailyLimit,
         maxParticipants: maxMembers,
-        visibility,
+        isPrivate,
+        password: isPrivate ? password : undefined,
+        ageGroups,
+        jobGroups,
+        dailyLimit,
       });
-      navigate(`/chats/${newId}`, { replace: true, state: { title: name.trim(), participationCount: 1 } });
+      navigate(`/chats/${newId}`, { replace: true, state: { title: title.trim(), participationCount: 1 } });
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "채팅방을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
+      // TODO(서버): 400 응답의 field명을 받아 해당 블록 인라인 에러로 매핑
+      setSubmitError(e instanceof ApiError ? e.message : "방을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
     } finally {
       setSubmitting(false);
     }
@@ -75,171 +97,250 @@ export default function ChatCreate() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="flex items-center justify-between px-4 h-12 shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="h-12 shrink-0 flex items-center gap-1 px-3">
+        <div className="w-10 h-11 flex items-center justify-center">
           <BackButton />
-          <p className="text-[17px] font-extrabold text-ink">채팅방 만들기</p>
         </div>
-        <span className="text-xs text-inkMuted">
-          {filledCount} / {SECTION_COUNT}
-        </span>
-      </div>
-      <div className="h-[3px] bg-fill shrink-0">
-        <div
-          className="h-full bg-primary transition-[width] duration-[220ms] ease-out"
-          style={{ width: `${(filledCount / SECTION_COUNT) * 100}%` }}
-        />
+        <p className="text-[17px] font-extrabold text-ink">방 만들기</p>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-col gap-[26px] px-5 pt-[18px] pb-6">
-          {/* TODO: 이미지 업로드(S3) 연동 전까지는 자리만 둔다 */}
+        <div className="flex flex-col gap-[18px] px-5 pt-1.5 pb-5">
+          <div className="flex flex-col gap-[22px]">
+          {/* TODO(3순위): 이미지 업로드(S3) */}
           <div className="flex flex-col items-center gap-2">
             <button
               type="button"
-              className="w-24 h-24 rounded-full bg-fillInput border-[1.5px] border-dashed border-lineStrong text-inkDisabled text-[26px] leading-none"
               aria-label="대표 이미지 선택"
+              className="w-[88px] h-[88px] rounded-[26px] bg-fillInput border-[1.5px] border-dashed border-lineStrong text-inkDisabled text-2xl leading-none"
             >
               ＋
             </button>
             <span className="text-xs text-inkMuted">대표 이미지 (선택)</span>
           </div>
 
-          <LabeledInput
-            label="1. 방 이름"
-            value={name}
-            onChange={setName}
-            maxLength={NAME_MAX_LEN}
-            placeholder="예) 무지출이 대세다"
-          />
-
-          <Section title="2. 한 줄 소개">
-            <textarea
-              value={intro}
-              onChange={(e) => setIntro(e.target.value)}
-              placeholder="어떤 사람들과, 어떤 규칙으로 아낄 건가요?"
-              className="w-full min-h-[72px] rounded-2xl bg-fillInput px-4 py-3 text-sm leading-normal text-ink placeholder:text-inkPlaceholder outline-none resize-none"
-            />
+          <Section ref={titleRef} label="방 제목" error={errors.title}>
+            <div className="relative">
+              <input
+                type="text"
+                value={title}
+                maxLength={TITLE_MAX}
+                placeholder={`${TITLE_MIN}~${TITLE_MAX}자로 입력`}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
+                }}
+                className={`w-full h-[46px] rounded-[14px] px-4 pr-14 text-sm text-ink placeholder:text-inkPlaceholder outline-none border-[1.4px] ${
+                  errors.title ? "bg-dangerTintBg border-danger" : "bg-fillInput border-transparent"
+                }`}
+              />
+              <Counter value={title.length} max={TITLE_MAX} className="right-3.5 top-1/2 -translate-y-1/2" />
+            </div>
           </Section>
 
-          <Section title="3. 하루 목표 지출 한도">
-            <div className="h-14 rounded-2xl border-[1.5px] border-primary px-3.5 flex items-center justify-between">
-              <StepButton label="−" tone="minus" onClick={() => changeLimit(dailyLimit - LIMIT_STEP)} />
-              <div className="text-[22px] font-extrabold text-ink">
-                {won(dailyLimit)}
-                <span className="text-[15px] font-bold ml-0.5">원</span>
+          <Section label="소개">
+            <div className="relative">
+              <textarea
+                value={intro}
+                maxLength={INTRO_MAX}
+                onChange={(e) => setIntro(e.target.value)}
+                placeholder="어떤 사람들과, 어떤 규칙으로 아낄 건가요?"
+                className="w-full min-h-[74px] rounded-[14px] bg-fillInput border-[1.4px] border-transparent px-4 py-3 pb-7 text-sm leading-[1.5] text-ink placeholder:text-inkPlaceholder outline-none resize-none"
+              />
+              <Counter value={intro.length} max={INTRO_MAX} className="right-3.5 bottom-2.5" />
+            </div>
+          </Section>
+
+          <Section label="인원">
+            <div className="flex gap-[7px]">
+              {MEMBER_PRESETS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setMaxMembers(n)}
+                  className={`flex-1 h-11 rounded-xl text-sm transition-colors ease-out ${
+                    maxMembers === n ? "bg-primary text-white font-bold" : "bg-fillInput text-inkMid font-semibold"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </Section>
+          </div>
+
+          <div ref={passwordRef} className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[15px] font-extrabold text-primary">비공개 방</p>
+                <p className="text-xs text-inkMuted mt-0.5">탐색에 노출되지 않고 비밀번호로만 입장</p>
               </div>
-              <StepButton label="＋" tone="plus" onClick={() => changeLimit(dailyLimit + LIMIT_STEP)} />
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isPrivate}
+                onClick={() => {
+                  setIsPrivate((v) => !v);
+                  setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                className={`w-[50px] h-[30px] rounded-full p-[3px] flex items-center shrink-0 transition-colors ease-out ${
+                  isPrivate ? "bg-primary justify-end" : "bg-lineMid justify-start"
+                }`}
+              >
+                <span className="w-6 h-6 rounded-full bg-white" />
+              </button>
             </div>
-            <div className="flex gap-2">
-              {LIMIT_PRESETS.map((preset) => (
-                <Chip key={preset} selected={dailyLimit === preset} onClick={() => changeLimit(preset)} size="sm">
-                  {won(preset)}
+            {isPrivate && (
+              <div className="flex flex-col gap-1.5">
+                <div
+                  className={`h-[46px] rounded-[14px] flex items-center justify-between px-4 border-[1.4px] ${
+                    errors.password ? "bg-dangerTintBg border-danger" : "bg-fillInput border-transparent"
+                  }`}
+                >
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    maxLength={PASSWORD_LEN}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value.replace(/\D/g, "").slice(0, PASSWORD_LEN));
+                      if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                    }}
+                    placeholder="••••"
+                    className="flex-1 min-w-0 bg-transparent text-base tracking-[0.3em] text-ink placeholder:text-inkPlaceholder outline-none"
+                  />
+                  <span className="text-xs text-inkDisabled shrink-0">4자리 숫자</span>
+                </div>
+                <span className={`text-xs ${errors.password ? "text-danger font-semibold" : "text-inkMuted"}`}>
+                  {errors.password ?? "입장할 사람에게 직접 공유해 주세요"}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            <div>
+              <p className="text-[15px] font-extrabold text-primary">방 속성</p>
+              <p className="text-xs text-inkMuted mt-0.5">탐색 필터와 같은 축 — 비슷한 사람에게 노출됩니다</p>
+            </div>
+
+            <ChipGroup label="나이대">
+              <Chip selected={ageGroups.length === 0} onClick={() => setAgeGroups([])}>전체</Chip>
+              {AGE_CHIPS.map((chip) => (
+                <Chip key={chip.label} selected={chip.values.every((v) => ageGroups.includes(v))} onClick={() => toggleAge(chip.values)}>
+                  {chip.label}
                 </Chip>
               ))}
-              <Chip selected={!LIMIT_PRESETS.includes(dailyLimit)} onClick={() => setTouched((t) => ({ ...t, limit: true }))} size="sm">
-                직접
-              </Chip>
-            </div>
-          </Section>
+            </ChipGroup>
 
-          <Section title="4. 최대 인원">
-            <div className="flex gap-2">
-              {MEMBER_PRESETS.map((preset) => (
-                <Chip key={preset} selected={maxMembers === preset} onClick={() => changeMembers(preset)} size="md">
-                  {preset}명
+            <ChipGroup label="직업">
+              {JOB_GROUP_OPTIONS.map((option) => (
+                <Chip key={option.value} selected={jobGroups.includes(option.value)} onClick={() => toggleJob(option.value)}>
+                  {option.label}
                 </Chip>
               ))}
-            </div>
-          </Section>
+            </ChipGroup>
 
-          <Section title="5. 공개 설정">
-            <div className="flex flex-col gap-2">
-              {VISIBILITY_OPTIONS.map((option) => {
-                const selected = visibility === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => changeVisibility(option.value)}
-                    className={`flex items-center gap-3 p-3.5 rounded-2xl border-[1.5px] text-left transition-colors ease-out ${
-                      selected ? "border-primary bg-primaryTintBg2" : "border-line bg-transparent"
-                    }`}
-                  >
-                    <span
-                      className={`w-5 h-5 rounded-full shrink-0 ${
-                        selected ? "border-[6px] border-primary" : "border-[1.5px] border-lineStrong"
-                      }`}
-                    />
-                    <span className="flex flex-col gap-0.5">
-                      <span className="text-sm font-bold text-ink">{option.title}</span>
-                      <span className="text-xs text-inkMuted">{option.description}</span>
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="flex flex-col gap-[7px]">
+              <div className="flex justify-between items-baseline">
+                <span className="text-xs font-bold text-inkMid">하루 목표 금액</span>
+                <span className="text-[13px] font-extrabold text-ink">{won(dailyLimit)}원</span>
+              </div>
+              <LimitSlider value={dailyLimit} onChange={setDailyLimit} />
+              <div className="flex justify-between text-[11px] text-inkDisabled">
+                <span>{won(LIMIT_MIN)}</span>
+                <span>{won(LIMIT_MAX)}</span>
+              </div>
             </div>
-          </Section>
+          </div>
 
-          {error && <p className="text-sm text-danger">{error}</p>}
+          {submitError && <p className="text-sm text-danger">{submitError}</p>}
         </div>
       </div>
 
-      <div className="shrink-0 px-5 pt-3 pb-4 bg-white border-t border-fillInput">
-        <CompleteButton
-          label={submitting ? "만드는 중…" : "채팅방 만들기"}
-          onChange={submit}
-          disabled={!name.trim() || submitting}
-        />
+      <div className="shrink-0 px-5 pt-3 pb-3.5 bg-white border-t border-fillInput">
+        <CompleteButton label={submitting ? "만드는 중…" : "만들기"} onChange={submit} disabled={submitting} />
       </div>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  ref,
+  label,
+  error,
+  children,
+}: {
+  ref?: React.Ref<HTMLDivElement>;
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="flex flex-col gap-3">
-      <p className="text-[17px] font-extrabold text-primary">{title}</p>
+    <section ref={ref} className="flex flex-col gap-2">
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[15px] font-extrabold text-primary">{label}</span>
+        {error && <span className="text-xs font-semibold text-danger">{error}</span>}
+      </div>
       {children}
     </section>
   );
 }
 
-function StepButton({ label, tone, onClick }: { label: string; tone: "minus" | "plus"; onClick: () => void }) {
+function Counter({ value, max, className }: { value: number; max: number; className: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-[34px] h-[34px] rounded-full text-[17px] leading-none ${
-        tone === "plus" ? "bg-primaryTintBg text-primary" : "bg-fillInput text-inkMid"
-      }`}
-    >
-      {label}
-    </button>
+    <span className={`absolute text-xs text-inkDisabled pointer-events-none ${className}`}>
+      {value}/{max}
+    </span>
   );
 }
 
-function Chip({
-  selected,
-  onClick,
-  size,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  size: "sm" | "md";
-  children: React.ReactNode;
-}) {
-  const sizeClass = size === "sm" ? "h-9 rounded-[10px] text-[13px]" : "h-11 rounded-xl text-sm";
+function ChipGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-bold text-inkMid">{label}</span>
+      <div className="flex flex-wrap gap-1.5">{children}</div>
+    </div>
+  );
+}
+
+function Chip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 transition-colors ease-out ${sizeClass} ${
+      className={`px-3 py-[7px] rounded-full text-xs transition-colors ease-out ${
         selected ? "bg-primary text-white font-bold" : "bg-fillInput text-inkMid font-semibold"
       }`}
     >
       {children}
     </button>
+  );
+}
+
+// 시각은 직접 그리고, 조작은 투명한 네이티브 range가 받는다.
+function LimitSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const ratio = ((value - LIMIT_MIN) / (LIMIT_MAX - LIMIT_MIN)) * 100;
+  return (
+    <div className="relative h-[22px] flex items-center">
+      <div className="w-full h-1.5 rounded-full bg-fill">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${ratio}%` }} />
+      </div>
+      <div
+        className="absolute w-[22px] h-[22px] rounded-full bg-white border-2 border-primary shadow-[0_2px_6px_rgba(23,22,28,0.18)] -translate-x-1/2 pointer-events-none"
+        style={{ left: `${ratio}%` }}
+      />
+      <input
+        type="range"
+        min={LIMIT_MIN}
+        max={LIMIT_MAX}
+        step={LIMIT_STEP}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label="하루 목표 금액"
+        className="absolute inset-0 w-full opacity-0 cursor-pointer"
+      />
+    </div>
   );
 }

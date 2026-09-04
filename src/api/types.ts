@@ -97,13 +97,19 @@ export interface ChatRoomInfoResponseDto {
 
 export type RoomVisibility = "PUBLIC" | "APPROVAL";
 
-// TODO(서버): POST /api/chats 구현 시 실제 요청 필드명에 맞춰 조정
+// TODO(서버): POST /api/chats 구현 시 실제 요청 필드명에 맞춰 조정 (핸드오프 2d 기준)
 export interface CreateRoomRequest {
   title: string;
   description: string;
-  dailyLimit: number;
   maxParticipants: number;
-  visibility: RoomVisibility;
+  isPrivate: boolean;
+  /** isPrivate일 때만. 4자리 숫자 */
+  password?: string;
+  /** 비어 있으면 전체 */
+  ageGroups: AgeGroup[];
+  /** 비어 있으면 전체 */
+  jobGroups: JobGroup[];
+  dailyLimit: number;
   imageUrl?: string;
 }
 

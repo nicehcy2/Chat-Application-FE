@@ -1,9 +1,10 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import LogoImage from "../assets/images/logo.png";
 
 export default function AuthPage() {
   const navigate = useNavigate();
+  const { state } = useLocation();
 
   return (
     <div className="flex flex-col h-full">
@@ -13,7 +14,7 @@ export default function AuthPage() {
       <div className="mb-16 flex flex-col gap-2 p-3">
         <button
           className="border border-black rounded-xl p-3"
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/login", { state })}
         >
           로그인
         </button>

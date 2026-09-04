@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { chatApi } from "../api/chatApi";
 import { ApiError } from "../api/client";
@@ -46,8 +46,30 @@ function ChatRoom({ roomId }: { roomId: string }) {
   const lastTsidRef = useRef<string | null>(null);
   const scrollHeightBeforePrependRef = useRef<number | null>(null);
 
+  // 목록에서 넘어온 state가 없으면(새로고침·직접 진입) 방 목록에서 찾아 채운다.
+  // TODO(서버): 단일 방 조회 GET /api/chats/{id}가 생기면 그걸로 교체
+  const [fallbackTitle, setFallbackTitle] = useState<string | null>(null);
+  const stateTitle = state?.title;
+  useEffect(() => {
+    if (stateTitle) return;
+    let cancelled = false;
+    chatApi
+      .getRooms()
+      .then((rooms) => {
+        if (cancelled) return;
+        const found = rooms.find((r) => String(r.chatRoomId) === roomId);
+        setFallbackTitle(found?.chatRoomTitle || "채팅방");
+      })
+      .catch(() => {
+        if (!cancelled) setFallbackTitle("채팅방");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId, stateTitle]);
+
   const participantList = Object.values(participants);
-  const title = state?.title;
+  const title = stateTitle || fallbackTitle;
   const participantCount = participantList.length || state?.participationCount;
 
   useLayoutEffect(() => {

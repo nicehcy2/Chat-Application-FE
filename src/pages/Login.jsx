@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext"
 import CompleteButton from "../components/CompleteButton";
 import BackButton from "../components/BackButton";
@@ -7,6 +7,7 @@ import { userApi } from "../api/userApi";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { state } = useLocation();
   const { setAuth } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -21,7 +22,7 @@ export default function Login() {
 
       setAuth({ accessToken, sessionId, userId });
 
-      navigate("/chats");
+      navigate(state?.from ?? "/", { replace: true });
     } catch (error) {
       console.log(error);
     }
