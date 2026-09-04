@@ -11,6 +11,7 @@ module.exports = {
                 primaryTintBg2: "#FAF9FF", // 선택된 라디오 배경
                 primaryChart: "#8C7BF2",   // 차트 2번째 계열
                 primaryBarSoft: "#DFDBF9", // 목표 이내 바, 썸네일 플레이스홀더
+                chartMuted: "#E7E5F3",     // 도넛 '기타' 계열
                 mint: "#11B5A4",           // 달성/성공/포인트
                 mintDeep: "#0B8C7F",       // 민트 배경 위 글자
                 mintTintBg: "#E4F6F4",     // 민트 배경 배지

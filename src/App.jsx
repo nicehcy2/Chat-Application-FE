@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import Home from "./pages/Home";
 import ChatRoomList from "./pages/ChatRoomList";
 import ChatRoomExplore from "./pages/ChatRoomExplore";
+import Expenses from "./pages/Expenses";
 import ChatCreate from "./pages/ChatCreate";
 import Chat from "./pages/Chat";
 import MyPage from "./pages/MyPage";
@@ -30,6 +31,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/chats" element={<ChatRoomList />} />
               <Route path="/chats/explore" element={<ChatRoomExplore />} />
+              <Route path="/expenses" element={<Expenses />} />
               <Route path="/mypage" element={<MyPage />} />
             </Route>
           </Route>

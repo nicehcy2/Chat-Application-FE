@@ -1,60 +1,42 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import HomeImage from "../assets/images/home.png";
 import MessageSquareImage from "../assets/images/message-square.png";
 import PieChartImage from "../assets/images/pie-chart.png";
 import UserImage from "../assets/images/user.png";
 
-function NavigationBar() {
+const TABS = [
+  { to: "/", label: "홈", icon: HomeImage },
+  { to: "/chats", label: "채팅방", icon: MessageSquareImage },
+  { to: "/expenses", label: "지출", icon: PieChartImage },
+  { to: "/mypage", label: "마이페이지", icon: UserImage },
+];
+
+const isActive = (pathname, to) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
+
+export default function NavigationBar() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   return (
-    <div className="flex flex-row justify-evenly items-center h-full border-t border-line">
-      <div
-        className="flex flex-col items-center gap-[0.8px] font-sans text-sm"
-        onClick={() => navigate("/")}
-      >
-        <img
-          src={HomeImage}
-          className="w-[22px] h-[22px]"
-          alt="홈 네비게이션 이미지"
-        ></img>
-        <div>홈</div>
-      </div>
-      <div
-        className="flex flex-col items-center gap-[0.8px] font-sans text-sm"
-        onClick={() => navigate("/chats")}
-      >
-        <img
-          src={MessageSquareImage}
-          className="w-[22px] h-[22px]"
-          alt="채팅방 네비게이션 이미지"
-        ></img>
-        <div>채팅방</div>
-      </div>
-      {/* TODO: 지출 도메인 구현 후 라우트 연결 */}
-      <div className="flex flex-col items-center gap-[0.8px] font-sans text-sm opacity-40">
-        <img
-          src={PieChartImage}
-          className="w-[22px] h-[22px]"
-          alt="지출 네비게이션 이미지"
-        ></img>
-        <div>지출</div>
-      </div>
-      <div
-        className="flex flex-col items-center gap-[0.8px] font-sans text-sm"
-        onClick={() => navigate("/mypage")}
-      >
-        <img
-          src={UserImage}
-          className="w-[22px] h-[22px]"
-          alt="마이페이지 네비게이션 이미지"
-        ></img>
-        <div>마이페이지</div>
-      </div>
-    </div>
+    <nav className="flex flex-row justify-evenly items-center h-full bg-white border-t border-line">
+      {TABS.map((tab) => {
+        const active = isActive(pathname, tab.to);
+        return (
+          <button
+            key={tab.to}
+            type="button"
+            onClick={() => navigate(tab.to)}
+            aria-current={active ? "page" : undefined}
+            className={`flex flex-col items-center gap-[3px] w-16 h-full justify-center transition-opacity ease-out ${
+              active ? "" : "opacity-40"
+            }`}
+          >
+            <img src={tab.icon} alt="" className="w-[22px] h-[22px]" />
+            <span className={`text-xs ${active ? "text-primary font-bold" : "text-ink"}`}>{tab.label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
-
-export default NavigationBar;
