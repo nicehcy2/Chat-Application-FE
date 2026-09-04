@@ -55,6 +55,8 @@ export default function ChatRoomList() {
     navigate(path);
   };
 
+  const totalUnread = rooms.reduce((sum, room) => sum + room.unreadChatCount, 0);
+
   return (
     <div className="relative flex flex-col h-full bg-white">
       <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
@@ -62,7 +64,18 @@ export default function ChatRoomList() {
 
         {status === "success" && (
           <>
-            <p className="px-4 pt-2 pb-1 text-[13px] font-semibold text-inkMuted">나의 채팅 그룹 · {rooms.length}</p>
+            <div className="flex items-center justify-between px-4 pt-3 pb-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] font-bold text-ink">나의 채팅 그룹</span>
+                <span className="h-[22px] min-w-[22px] px-2 rounded-full bg-primaryTintBg text-primary text-xs font-extrabold flex items-center justify-center">
+                  {rooms.length}
+                </span>
+                {totalUnread > 0 && <span className="text-xs font-semibold text-mintDeep">안 읽음 {totalUnread > 99 ? "99+" : totalUnread}</span>}
+              </div>
+              <button type="button" onClick={() => navigate("/chats/explore")} className="py-2 pl-3 text-[13px] font-bold text-primary">
+                탐색 ›
+              </button>
+            </div>
             <div className="flex flex-col px-4 pb-24">
               {rooms.map((room, i) => (
                 <div
