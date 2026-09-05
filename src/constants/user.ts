@@ -36,3 +36,9 @@ export const PASSWORD_MAX_LEN = 20;
 export function labelOf<T extends string>(options: Option<T>[], value: T | null | undefined): string {
   return options.find((option) => option.value === value)?.label ?? "미선택";
 }
+
+/** 방 대상 목록 라벨. 서버는 빈 목록을 "전체 대상"으로 본다 */
+export function groupLabels<T extends string>(options: Option<T>[], values: T[]): string {
+  const labels = options.filter((option) => values.includes(option.value)).map((option) => option.label);
+  return labels.length === 0 ? "전체" : labels.join("·");
+}

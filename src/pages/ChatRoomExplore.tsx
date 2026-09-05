@@ -1,15 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type UIEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { chatApi } from "../api/chatApi";
 import { ApiError } from "../api/client";
+import type { AgeGroup, ExploreRoom, JobGroup } from "../api/types";
 import { useAuth } from "../contexts/AuthContext";
-import {
-  EXPLORE_FILTERS,
-  applyRoom,
-  fetchExploreRooms,
-  type ExploreFilter,
-  type ExploreRoom,
-} from "../mocks/explore";
+import { AGE_GROUP_OPTIONS, JOB_GROUP_OPTIONS, groupLabels } from "../constants/user";
 import { thumbFallbackClass } from "../utils/thumb";
 import RoomDetailSheet, { type RoomAction } from "../components/explore/RoomDetailSheet";
 import StateView from "../components/StateView";
@@ -17,6 +12,9 @@ import StateView from "../components/StateView";
 type Status = "loading" | "success" | "empty" | "error";
 
 const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_MAX_LEN = 50; // 서버 ExploreChatRoomRequestDto @Size(max = 50)
+const PAGE_SIZE = 20;
+const LOAD_MORE_THRESHOLD_PX = 200;
 const won = (n: number) => n.toLocaleString("ko-KR");
 
 const JOIN_ERROR_MESSAGE: Record<string, string> = {
@@ -36,10 +34,15 @@ export default function ChatRoomExplore() {
   const { logout } = useAuth();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [filter, setFilter] = useState<ExploreFilter>("인기");
+  const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(null);
+  const [jobGroup, setJobGroup] = useState<JobGroup | null>(null);
   const [rooms, setRooms] = useState<ExploreRoom[]>([]);
   const [status, setStatus] = useState<Status>("loading");
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // 탐색 목록엔 내 멤버십이 없어 내 방 목록과 교차해 "입장" 버튼을 만든다
+  const [joinedIds, setJoinedIds] = useState<Set<number>>(new Set());
   const [actions, setActions] = useState<Record<number, RoomAction>>({});
   const [actionError, setActionError] = useState("");
   const [selected, setSelected] = useState<ExploreRoom | null>(null);
@@ -51,10 +54,26 @@ export default function ChatRoomExplore() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchExploreRooms(debouncedQuery, filter)
+    chatApi
+      .getRooms()
+      .then((list) => {
+        if (!cancelled) setJoinedIds(new Set(list.map((r) => r.chatRoomId)));
+      })
+      // 실패해도 탐색은 동작한다. 참여 중인 방은 join 시 CHATROOM4091로 걸러진다
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    chatApi
+      .exploreRooms({ q: debouncedQuery, ageGroup: ageGroup ?? undefined, jobGroup: jobGroup ?? undefined, limit: PAGE_SIZE })
       .then((list) => {
         if (cancelled) return;
         setRooms(list);
+        setHasMore(list.length === PAGE_SIZE);
         setStatus(list.length === 0 ? "empty" : "success");
       })
       .catch(() => {
@@ -63,17 +82,48 @@ export default function ChatRoomExplore() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery, filter, reloadKey]);
+  }, [debouncedQuery, ageGroup, jobGroup, reloadKey]);
 
-  const changeFilter = (next: ExploreFilter) => {
-    setStatus("loading");
-    setFilter(next);
+  const loadMore = () => {
+    if (!hasMore || loadingMore || status !== "success") return;
+    const last = rooms[rooms.length - 1];
+    if (!last) return;
+    setLoadingMore(true);
+    chatApi
+      .exploreRooms({
+        q: debouncedQuery,
+        ageGroup: ageGroup ?? undefined,
+        jobGroup: jobGroup ?? undefined,
+        before: last.chatRoomId,
+        limit: PAGE_SIZE,
+      })
+      .then((list) => {
+        setRooms((prev) => [...prev, ...list]);
+        setHasMore(list.length === PAGE_SIZE);
+      })
+      .catch(() => setActionError("더 불러오지 못했어요. 스크롤하면 다시 시도해요"))
+      .finally(() => setLoadingMore(false));
   };
 
-  const resetFilters = () => {
+  const handleScroll = (e: UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < LOAD_MORE_THRESHOLD_PX) loadMore();
+  };
+
+  const allSelected = ageGroup === null && jobGroup === null;
+  const selectAll = () => {
+    if (allSelected) return;
     setStatus("loading");
-    setQuery("");
-    setFilter("인기");
+    setAgeGroup(null);
+    setJobGroup(null);
+  };
+  const toggleAge = (value: AgeGroup) => {
+    setStatus("loading");
+    setAgeGroup((prev) => (prev === value ? null : value));
+  };
+  const toggleJob = (value: JobGroup) => {
+    setStatus("loading");
+    setJobGroup((prev) => (prev === value ? null : value));
   };
 
   const retry = () => {
@@ -93,14 +143,14 @@ export default function ChatRoomExplore() {
     setActionError("");
     try {
       await chatApi.joinRoom(room.chatRoomId, password);
-      enterRoom(room, room.participantCount + 1);
+      enterRoom(room, room.participationCount + 1);
       return true;
     } catch (err) {
       const code = err instanceof ApiError ? (err.code ?? "") : "";
 
       // 이미 참여 중이면 오류가 아니라 그 방으로 보낸다
       if (code === "CHATROOM4091") {
-        enterRoom(room, room.participantCount);
+        enterRoom(room, room.participationCount);
         return true;
       }
       if (code === "CHATROOM4031") {
@@ -122,50 +172,36 @@ export default function ChatRoomExplore() {
     }
   };
 
-  // TODO(서버): 승인제 신청 API 없음. 목 유지
-  const handleApply = async (room: ExploreRoom) => {
-    setAction(room.chatRoomId, "joining");
-    setActionError("");
-    try {
-      await applyRoom(room.chatRoomId);
-      setAction(room.chatRoomId, "applied");
-      setSelected(null);
-    } catch {
-      setAction(room.chatRoomId, "idle");
-      setActionError("신청하지 못했어요. 잠시 후 다시 시도해주세요.");
-    }
-  };
-
   return (
     <div className="relative flex flex-col h-full bg-white">
-      <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+      <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden" onScroll={handleScroll}>
         <div className="sticky top-0 z-10 bg-white px-4 pt-2 pb-3 flex flex-col gap-3">
           <label className="h-11 rounded-[14px] bg-fillInput px-3.5 flex items-center gap-2">
             <SearchIcon />
             <input
               type="search"
               value={query}
+              maxLength={SEARCH_MAX_LEN}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="방 이름 · 태그로 검색"
+              placeholder="방 이름 · 소개로 검색"
               className="flex-1 bg-transparent text-sm text-ink placeholder:text-inkPlaceholder outline-none"
             />
           </label>
           <div className="flex gap-[7px] overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            {EXPLORE_FILTERS.map((chip) => {
-              const active = chip === filter;
-              return (
-                <button
-                  key={chip}
-                  type="button"
-                  onClick={() => changeFilter(chip)}
-                  className={`px-[13px] py-2 rounded-full text-[13px] whitespace-nowrap transition-colors ease-out ${
-                    active ? "bg-primary text-white font-bold" : "bg-fillInput text-inkMid font-semibold"
-                  }`}
-                >
-                  {chip}
-                </button>
-              );
-            })}
+            <FilterChip active={allSelected} onClick={selectAll}>
+              전체
+            </FilterChip>
+            {AGE_GROUP_OPTIONS.map((option) => (
+              <FilterChip key={option.value} active={ageGroup === option.value} onClick={() => toggleAge(option.value)}>
+                {option.label}
+              </FilterChip>
+            ))}
+            <span className="w-px self-stretch bg-lineMid shrink-0" />
+            {JOB_GROUP_OPTIONS.map((option) => (
+              <FilterChip key={option.value} active={jobGroup === option.value} onClick={() => toggleJob(option.value)}>
+                {option.label}
+              </FilterChip>
+            ))}
           </div>
         </div>
 
@@ -190,24 +226,26 @@ export default function ChatRoomExplore() {
               icon={<SearchIcon />}
               title="조건에 맞는 방이 없어요"
               description="검색어나 필터를 바꿔보세요"
-              outlineAction={{ label: "필터 초기화", onClick: resetFilters }}
+              outlineAction={{ label: "필터 초기화", onClick: () => { setQuery(""); selectAll(); } }}
             />
           )}
 
           {status === "success" && (
             <>
-              <p className="text-[13px] font-semibold text-inkMuted py-1">내 목표와 비슷한 방 · {rooms.length}개</p>
+              <p className="text-[13px] font-semibold text-inkMuted py-1">새로 생긴 방부터 보여드려요</p>
               {rooms.map((room, i) => (
                 <RoomCard
                   key={room.chatRoomId}
                   room={room}
+                  joined={joinedIds.has(room.chatRoomId)}
                   action={actions[room.chatRoomId] ?? "idle"}
                   isLast={i === rooms.length - 1}
                   onOpen={() => setSelected(room)}
                   onJoin={() => (room.isPrivate ? setSelected(room) : handleJoin(room))}
-                  onApply={() => (room.isPrivate ? setSelected(room) : handleApply(room))}
+                  onEnter={() => enterRoom(room, room.participationCount)}
                 />
               ))}
+              {loadingMore && <p className="text-xs text-inkMuted text-center py-3">불러오는 중…</p>}
             </>
           )}
         </div>
@@ -215,38 +253,53 @@ export default function ChatRoomExplore() {
 
       <RoomDetailSheet
         room={selected}
+        joined={selected !== null && joinedIds.has(selected.chatRoomId)}
         action={selected ? (actions[selected.chatRoomId] ?? "idle") : "idle"}
         busy={busyRoomId !== undefined}
         onClose={() => setSelected(null)}
         onJoin={handleJoin}
-        onApply={handleApply}
+        onEnter={(room) => enterRoom(room, room.participationCount)}
       />
     </div>
   );
 }
 
+function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-[13px] py-2 rounded-full text-[13px] whitespace-nowrap transition-colors ease-out ${
+        active ? "bg-primary text-white font-bold" : "bg-fillInput text-inkMid font-semibold"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function RoomCard({
   room,
+  joined,
   action,
   isLast,
   onOpen,
   onJoin,
-  onApply,
+  onEnter,
 }: {
   room: ExploreRoom;
+  joined: boolean;
   action: RoomAction;
   isLast: boolean;
   onOpen: () => void;
   onJoin: () => void;
-  onApply: () => void;
+  onEnter: () => void;
 }) {
-  const full = action === "full" || room.participantCount >= room.maxParticipants;
-
   return (
     <div className={`flex gap-3.5 py-3 ${isLast ? "" : "border-b border-fillInput"}`}>
       <div className="flex flex-1 min-w-0 gap-3.5 cursor-pointer" onClick={onOpen}>
-        {room.thumbnailUrl ? (
-          <img src={room.thumbnailUrl} alt="" className="w-[68px] h-[68px] rounded-2xl object-cover shrink-0" />
+        {room.imageUrl ? (
+          <img src={room.imageUrl} alt="" className="w-[68px] h-[68px] rounded-2xl object-cover shrink-0" />
         ) : (
           <div className={`w-[68px] h-[68px] rounded-2xl shrink-0 ${thumbFallbackClass(room.chatRoomId)}`} />
         )}
@@ -254,51 +307,56 @@ function RoomCard({
           <div className="flex items-baseline gap-[5px]">
             <span className="text-[15px] font-bold text-ink truncate">{room.title}</span>
             <span className="text-xs font-semibold text-primary shrink-0">
-              {room.participantCount}/{room.maxParticipants}
+              {room.participationCount}/{room.maxParticipants}
             </span>
+            {room.isPrivate && <span className="text-[11px] shrink-0">🔒</span>}
           </div>
           <p className="text-xs text-inkMuted leading-[1.45] line-clamp-2">{room.description}</p>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-bold text-mintDeep bg-mintTintBg px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-[11px] font-bold text-mintDeep bg-mintTintBg px-2 py-1 rounded-md shrink-0">
               일 {won(room.dailyLimit)}원
             </span>
-            <span className="text-[11px] font-semibold text-inkSub bg-fillInput px-2 py-1 rounded-md">
-              {room.visibility === "APPROVAL" ? "승인제" : room.tag}
+            <span className="text-[11px] font-semibold text-inkSub bg-fillInput px-2 py-1 rounded-md truncate">
+              {groupLabels(AGE_GROUP_OPTIONS, room.ageGroups)}
+            </span>
+            <span className="text-[11px] font-semibold text-inkSub bg-fillInput px-2 py-1 rounded-md truncate">
+              {groupLabels(JOB_GROUP_OPTIONS, room.jobGroups)}
             </span>
           </div>
         </div>
       </div>
-      <ActionButton room={room} full={full} action={action} onJoin={onJoin} onApply={onApply} />
+      <ActionButton room={room} joined={joined} action={action} onJoin={onJoin} onEnter={onEnter} />
     </div>
   );
 }
 
 function ActionButton({
   room,
-  full,
+  joined,
   action,
   onJoin,
-  onApply,
+  onEnter,
 }: {
   room: ExploreRoom;
-  full: boolean;
+  joined: boolean;
   action: RoomAction;
   onJoin: () => void;
-  onApply: () => void;
+  onEnter: () => void;
 }) {
   const base = "self-center h-9 px-3.5 rounded-xl text-[13px] font-extrabold shrink-0 transition-colors ease-out";
   const disabledClass = `${base} border-[1.4px] border-lineMid bg-fillSoft text-inkDisabled pointer-events-none`;
   const activeClass = `${base} border-[1.4px] border-primary bg-white text-primary`;
 
-  if (full) return <button type="button" className={disabledClass}>마감</button>;
-  if (action === "blocked") return <button type="button" className={disabledClass}>제한</button>;
-  if (action === "applied") return <button type="button" className={disabledClass}>신청됨</button>;
+  if (joined) return <button type="button" onClick={onEnter} className={`${base} bg-primary text-white`}>입장</button>;
+  if (room.isBanned || action === "blocked") return <button type="button" className={disabledClass}>제한</button>;
+  if (action === "full" || room.participationCount >= room.maxParticipants) {
+    return <button type="button" className={disabledClass}>마감</button>;
+  }
   if (action === "joining") return <button type="button" className={disabledClass}>…</button>;
 
-  const isApproval = room.visibility === "APPROVAL";
   return (
-    <button type="button" onClick={isApproval ? onApply : onJoin} className={activeClass}>
-      {isApproval ? "신청" : "참여"}
+    <button type="button" onClick={onJoin} className={activeClass}>
+      참여
     </button>
   );
 }

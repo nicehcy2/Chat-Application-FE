@@ -8,6 +8,9 @@ export function parseServerDate(value: DateInput): Date {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+export const daysSince = (value: DateInput): number =>
+  Math.max(0, Math.floor((Date.now() - parseServerDate(value).getTime()) / DAY_MS));
+
 const startOfDay = (date: Date): Date => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 export const isSameDay = (a: DateInput, b: DateInput): boolean =>

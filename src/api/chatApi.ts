@@ -1,8 +1,11 @@
 import { request } from "./client";
 import type {
+  ChatRoomDetail,
   ChatRoomInfoResponseDto,
   ChatRoomParticipantDto,
   CreateRoomRequest,
+  ExploreQuery,
+  ExploreRoom,
   MessageDto,
 } from "./types";
 
@@ -23,6 +26,13 @@ export const chatApi = {
 
   getParticipants: (roomId: string | number) =>
     request<ChatRoomParticipantDto[]>("chat", `/api/chats/${roomId}/participants`),
+
+  // 최신순(id DESC). 끝 판정 = size < limit. 내가 참여 중인 방도 섞여 온다
+  exploreRooms: ({ q, ...rest }: ExploreQuery = {}) =>
+    request<ExploreRoom[]>("chat", "/api/chats/explore", { query: { q: q?.trim() || undefined, ...rest } }),
+
+  getRoomDetail: (roomId: string | number) =>
+    request<ChatRoomDetail>("chat", `/api/chats/${roomId}/detail`),
 
   // 201 + 생성된 chatRoomId. @Valid 실패는 ApiError.fieldErrors로 온다.
   createRoom: (payload: CreateRoomRequest) =>

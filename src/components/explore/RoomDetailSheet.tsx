@@ -1,28 +1,54 @@
 import { useEffect, useState } from "react";
-import type { ExploreRoom } from "../../mocks/explore";
+import { chatApi } from "../../api/chatApi";
+import type { ChatRoomDetail, ExploreRoom, ExploreRoomBase, MembershipStatus } from "../../api/types";
+import { AGE_GROUP_OPTIONS, JOB_GROUP_OPTIONS, UNDECIDED, groupLabels, labelOf } from "../../constants/user";
+import { daysSince } from "../../utils/date";
 import { thumbFallbackClass } from "../../utils/thumb";
 
-/** blocked·full은 join 실패 응답(CHATROOM4032·CHATROOM409)으로만 알 수 있어 카드별 상태로 든다 */
-export type RoomAction = "idle" | "joining" | "applied" | "blocked" | "full";
+/** blocked·full은 join 실패 응답(CHATROOM4032·CHATROOM409)으로 카드에 남기는 상태 */
+export type RoomAction = "idle" | "joining" | "blocked" | "full";
 
 interface RoomDetailSheetProps {
   room: ExploreRoom | null;
+  /** 내 방 목록과 교차한 결과. 상세 응답이 오면 그쪽 membershipStatus가 우선 */
+  joined: boolean;
   action: RoomAction;
   busy: boolean;
   onClose: () => void;
   /** 비밀번호가 틀리면 false. 성공·그 외 오류는 true(시트 밖에서 처리) */
   onJoin: (room: ExploreRoom, password?: string) => Promise<boolean>;
-  onApply: (room: ExploreRoom) => void;
+  /** 이미 참여 중인 방. join 없이 바로 이동 */
+  onEnter: (room: ExploreRoom) => void;
 }
 
 const won = (n: number) => n.toLocaleString("ko-KR");
 
 // 탐색 카드 탭 → 바텀시트. 뒤의 목록은 그대로 두어 이탈 비용을 0으로.
-export default function RoomDetailSheet({ room, action, busy, onClose, onJoin, onApply }: RoomDetailSheetProps) {
+export default function RoomDetailSheet({ room, ...rest }: RoomDetailSheetProps) {
+  if (!room) return null;
+  // 방이 바뀌면 상세·비밀번호 상태를 처음부터
+  return <Sheet key={room.chatRoomId} room={room} {...rest} />;
+}
+
+function Sheet({ room, joined, action, busy, onClose, onJoin, onEnter }: RoomDetailSheetProps & { room: ExploreRoom }) {
   const [askPassword, setAskPassword] = useState(false);
+  const [detail, setDetail] = useState<ChatRoomDetail | null>(null);
+
+  // 목록 데이터로 먼저 그리고, 상세가 오면 인원·멤버십·호스트를 갱신한다. 실패해도 목록 데이터로 동작
+  useEffect(() => {
+    let cancelled = false;
+    chatApi
+      .getRoomDetail(room.chatRoomId)
+      .then((d) => {
+        if (!cancelled) setDetail(d);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [room.chatRoomId]);
 
   useEffect(() => {
-    if (!room) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || busy) return;
       if (askPassword) setAskPassword(false);
@@ -30,19 +56,29 @@ export default function RoomDetailSheet({ room, action, busy, onClose, onJoin, o
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [room, busy, askPassword, onClose]);
+  }, [busy, askPassword, onClose]);
 
-  if (!room) return null;
-
-  const full = action === "full" || room.participantCount >= room.maxParticipants;
-  const ratio = Math.min(100, (room.participantCount / room.maxParticipants) * 100);
-  const isApproval = room.visibility === "APPROVAL";
+  const view: ExploreRoomBase = detail ?? room;
+  const membership: MembershipStatus = detail?.membershipStatus ?? (joined ? "JOINED" : room.isBanned ? "BANNED" : "NONE");
+  const blocked = membership === "BANNED" || action === "blocked";
+  const full = membership !== "JOINED" && (action === "full" || view.participationCount >= view.maxParticipants);
+  const ratio = Math.min(100, (view.participationCount / view.maxParticipants) * 100);
 
   const primaryAction = () => {
-    if (room.isPrivate) setAskPassword(true);
-    else if (isApproval) onApply(room);
+    if (view.isPrivate) setAskPassword(true);
     else onJoin(room);
   };
+
+  const host = view.host;
+  const hostMeta = host
+    ? [
+        host.ageGroup !== UNDECIDED && labelOf(AGE_GROUP_OPTIONS, host.ageGroup),
+        host.jobGroup !== UNDECIDED && labelOf(JOB_GROUP_OPTIONS, host.jobGroup),
+        `방 개설 ${daysSince(view.createdAt)}일`,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   return (
     <>
@@ -51,20 +87,20 @@ export default function RoomDetailSheet({ room, action, busy, onClose, onJoin, o
         <div className="w-11 h-1 rounded-full bg-lineMid self-center" />
 
         <div className="flex items-center gap-3.5">
-          {room.thumbnailUrl ? (
-            <img src={room.thumbnailUrl} alt="" className="w-[76px] h-[76px] rounded-[22px] object-cover shrink-0" />
+          {view.imageUrl ? (
+            <img src={view.imageUrl} alt="" className="w-[76px] h-[76px] rounded-[22px] object-cover shrink-0" />
           ) : (
-            <div className={`w-[76px] h-[76px] rounded-[22px] shrink-0 ${thumbFallbackClass(room.chatRoomId)}`} />
+            <div className={`w-[76px] h-[76px] rounded-[22px] shrink-0 ${thumbFallbackClass(view.chatRoomId)}`} />
           )}
           <div className="flex-1 min-w-0 flex flex-col gap-[5px]">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-lg font-extrabold text-ink truncate">{room.title}</span>
-              {room.isPrivate && (
+              <span className="text-lg font-extrabold text-ink truncate">{view.title}</span>
+              {view.isPrivate && (
                 <span className="text-[11px] font-bold text-inkMid bg-fillInput px-[7px] py-[3px] rounded-[5px] shrink-0">🔒 비공개</span>
               )}
             </div>
             <span className="text-[13px] text-inkMuted">
-              인원 {room.participantCount} / {room.maxParticipants}명
+              인원 {view.participationCount} / {view.maxParticipants}명
             </span>
             <div className="h-[5px] rounded-full bg-fill overflow-hidden mt-0.5">
               <div className="h-full bg-primary rounded-full" style={{ width: `${ratio}%` }} />
@@ -72,35 +108,43 @@ export default function RoomDetailSheet({ room, action, busy, onClose, onJoin, o
           </div>
         </div>
 
-        <p className="text-sm leading-[1.6] text-inkMid">{room.description}</p>
+        <p className="text-sm leading-[1.6] text-inkMid">{view.description}</p>
 
         <div className="flex flex-wrap gap-1.5">
-          <span className="text-xs font-bold text-mintDeep bg-mintTintBg px-2.5 py-1.5 rounded-lg">일 {won(room.dailyLimit)}원</span>
-          <span className="text-xs font-semibold text-inkMid bg-fillInput px-2.5 py-1.5 rounded-lg">{room.ageGroupLabel}</span>
-          <span className="text-xs font-semibold text-inkMid bg-fillInput px-2.5 py-1.5 rounded-lg">{room.jobLabel}</span>
+          <span className="text-xs font-bold text-mintDeep bg-mintTintBg px-2.5 py-1.5 rounded-lg">일 {won(view.dailyLimit)}원</span>
+          <span className="text-xs font-semibold text-inkMid bg-fillInput px-2.5 py-1.5 rounded-lg">{groupLabels(AGE_GROUP_OPTIONS, view.ageGroups)}</span>
+          <span className="text-xs font-semibold text-inkMid bg-fillInput px-2.5 py-1.5 rounded-lg">{groupLabels(JOB_GROUP_OPTIONS, view.jobGroups)}</span>
         </div>
 
-        <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-fillSoft">
-          {room.host.imageUrl ? (
-            <img src={room.host.imageUrl} alt="" className="w-[38px] h-[38px] rounded-full object-cover shrink-0" />
-          ) : (
-            <div className={`w-[38px] h-[38px] rounded-full shrink-0 ${thumbFallbackClass(room.host.userId)}`} />
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-ink flex items-center gap-1">
-              {room.host.nickname}
-              <span className="text-[10px] font-extrabold text-white bg-primary px-1.5 py-0.5 rounded-[5px]">호스트</span>
-            </p>
-            <p className="text-xs text-inkMuted">
-              {room.host.ageGroupLabel} · {room.host.jobLabel} · 방 개설 {room.host.createdDaysAgo}일
-            </p>
+        {host && (
+          <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-fillSoft">
+            {host.imageUrl ? (
+              <img src={host.imageUrl} alt="" className="w-[38px] h-[38px] rounded-full object-cover shrink-0" />
+            ) : (
+              <div className={`w-[38px] h-[38px] rounded-full shrink-0 ${thumbFallbackClass(host.userId)}`} />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-bold text-ink flex items-center gap-1">
+                {host.nickname}
+                <span className="text-[10px] font-extrabold text-white bg-primary px-1.5 py-0.5 rounded-[5px]">호스트</span>
+              </p>
+              <p className="text-xs text-inkMuted">{hostMeta}</p>
+            </div>
           </div>
-        </div>
+        )}
 
-        {full ? (
-          <DisabledCta label="정원이 가득 찼어요" />
-        ) : action === "blocked" ? (
+        {membership === "JOINED" ? (
+          <button
+            type="button"
+            onClick={() => onEnter(room)}
+            className="w-full h-[52px] rounded-2xl bg-primary text-white text-base font-extrabold"
+          >
+            입장하기
+          </button>
+        ) : blocked ? (
           <DisabledCta label="재입장 제한 중" />
+        ) : full ? (
+          <DisabledCta label="정원이 가득 찼어요" />
         ) : (
           <button
             type="button"
@@ -108,7 +152,7 @@ export default function RoomDetailSheet({ room, action, busy, onClose, onJoin, o
             disabled={busy}
             className="w-full h-[52px] rounded-2xl bg-primary text-white text-base font-extrabold disabled:opacity-60"
           >
-            {busy ? "처리 중…" : isApproval ? "참여 신청하기" : "입장하기"}
+            {busy ? "처리 중…" : "입장하기"}
           </button>
         )}
       </div>
@@ -118,11 +162,6 @@ export default function RoomDetailSheet({ room, action, busy, onClose, onJoin, o
           busy={busy}
           onCancel={() => setAskPassword(false)}
           onSubmit={async (password) => {
-            if (isApproval) {
-              setAskPassword(false);
-              onApply(room);
-              return true;
-            }
             // 검증 API 없음. join이 곧 검증이라 틀리면(CHATROOM4031) 다이얼로그를 유지한다
             const ok = await onJoin(room, password);
             if (ok) setAskPassword(false);

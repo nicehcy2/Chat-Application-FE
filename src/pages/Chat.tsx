@@ -52,22 +52,19 @@ function ChatRoom({ roomId }: { roomId: string }) {
   const lastTsidRef = useRef<string | null>(null);
   const scrollHeightBeforePrependRef = useRef<number | null>(null);
 
-  // 목록에서 넘어온 state가 없으면(새로고침·직접 진입) 방 목록에서 찾아 채운다.
-  // TODO(서버): 단일 방 조회 GET /api/chats/{id}가 생기면 그걸로 교체
-  const [fallbackTitle, setFallbackTitle] = useState<string | null>(null);
+  // 목록에서 넘어온 state가 없으면(새로고침·직접 진입) 방 상세 한 번으로 채운다
+  const [fallback, setFallback] = useState<{ title: string; participationCount?: number } | null>(null);
   const stateTitle = state?.title;
   useEffect(() => {
     if (stateTitle) return;
     let cancelled = false;
     chatApi
-      .getRooms()
-      .then((rooms) => {
-        if (cancelled) return;
-        const found = rooms.find((r) => String(r.chatRoomId) === roomId);
-        setFallbackTitle(found?.chatRoomTitle || "채팅방");
+      .getRoomDetail(roomId)
+      .then((detail) => {
+        if (!cancelled) setFallback({ title: detail.title || "채팅방", participationCount: detail.participationCount });
       })
       .catch(() => {
-        if (!cancelled) setFallbackTitle("채팅방");
+        if (!cancelled) setFallback({ title: "채팅방" });
       });
     return () => {
       cancelled = true;
@@ -75,8 +72,8 @@ function ChatRoom({ roomId }: { roomId: string }) {
   }, [roomId, stateTitle]);
 
   const participantList = Object.values(participants);
-  const title = stateTitle || fallbackTitle;
-  const participantCount = participantList.length || state?.participationCount;
+  const title = stateTitle || fallback?.title;
+  const participantCount = participantList.length || state?.participationCount || fallback?.participationCount;
 
   useLayoutEffect(() => {
     const list = listRef.current;

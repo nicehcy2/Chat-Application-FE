@@ -95,7 +95,55 @@ export interface ChatRoomInfoResponseDto {
   updatedAt: string | null;
 }
 
-export type RoomVisibility = "PUBLIC" | "APPROVAL";
+export type MembershipStatus = "NONE" | "JOINED" | "LEFT" | "BANNED";
+
+export interface ExploreRoomHost {
+  userId: number;
+  nickname: string;
+  imageUrl: string | null;
+  ageGroup: AgeGroup;
+  jobGroup: JobGroup;
+}
+
+// 둘러보기 목록과 방 상세가 공유하는 부분
+export interface ExploreRoomBase {
+  chatRoomId: number;
+  title: string;
+  description: string;
+  participationCount: number;
+  maxParticipants: number;
+  dailyLimit: number;
+  isPrivate: boolean;
+  imageUrl: string | null;
+  /** 비어 있으면 전체 대상 */
+  ageGroups: AgeGroup[];
+  /** 비어 있으면 전체 대상 */
+  jobGroups: JobGroup[];
+  createdAt: string;
+  /** 방장이 나가면 null. 위임은 서버 예정 */
+  host: ExploreRoomHost | null;
+}
+
+// GET /api/chats/explore 항목. 내 멤버십 여부는 오지 않는다(강퇴만 isBanned)
+export interface ExploreRoom extends ExploreRoomBase {
+  isBanned: boolean;
+}
+
+// GET /api/chats/{id}/detail. 멤버가 아니어도 조회된다
+export interface ChatRoomDetail extends ExploreRoomBase {
+  membershipStatus: MembershipStatus;
+}
+
+export interface ExploreQuery {
+  /** 제목·소개 부분일치. 50자 이하 */
+  q?: string;
+  ageGroup?: AgeGroup;
+  jobGroup?: JobGroup;
+  /** 이 chatRoomId보다 작은(오래된) 방만. 최신순이라 마지막 항목의 id를 넘긴다 */
+  before?: number;
+  /** 기본 20, 최대 50 */
+  limit?: number;
+}
 
 // 서버 CreateChatRoomRequestDto와 1:1. title ≤18, password는 isPrivate일 때 숫자 4자리
 export interface CreateRoomRequest {
