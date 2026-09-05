@@ -1,24 +1,20 @@
 import { useEffect, useState } from "react";
 import { chatApi } from "../../api/chatApi";
-import type { ChatRoomDetail, ExploreRoom, ExploreRoomBase, MembershipStatus } from "../../api/types";
+import type { ChatRoomDetail, ExploreRoom, MembershipStatus } from "../../api/types";
 import { AGE_GROUP_OPTIONS, JOB_GROUP_OPTIONS, UNDECIDED, groupLabels, labelOf } from "../../constants/user";
 import { daysSince } from "../../utils/date";
 import { thumbFallbackClass } from "../../utils/thumb";
 
-/** blocked·full은 join 실패 응답(CHATROOM4032·CHATROOM409)으로 카드에 남기는 상태 */
-export type RoomAction = "idle" | "joining" | "blocked" | "full";
+/** joined·blocked·full은 join 실패 응답(CHATROOM4091·4032·409)으로 카드에 남기는 상태. 목록의 membershipStatus보다 우선 */
+export type RoomAction = "idle" | "joining" | "joined" | "blocked" | "full";
 
 interface RoomDetailSheetProps {
   room: ExploreRoom | null;
-  /** 내 방 목록과 교차한 결과. 상세 응답이 오면 그쪽 membershipStatus가 우선 */
-  joined: boolean;
   action: RoomAction;
   busy: boolean;
   onClose: () => void;
   /** 비밀번호가 틀리면 false. 성공·그 외 오류는 true(시트 밖에서 처리) */
   onJoin: (room: ExploreRoom, password?: string) => Promise<boolean>;
-  /** 이미 참여 중인 방. join 없이 바로 이동 */
-  onEnter: (room: ExploreRoom) => void;
 }
 
 const won = (n: number) => n.toLocaleString("ko-KR");
@@ -30,7 +26,7 @@ export default function RoomDetailSheet({ room, ...rest }: RoomDetailSheetProps)
   return <Sheet key={room.chatRoomId} room={room} {...rest} />;
 }
 
-function Sheet({ room, joined, action, busy, onClose, onJoin, onEnter }: RoomDetailSheetProps & { room: ExploreRoom }) {
+function Sheet({ room, action, busy, onClose, onJoin }: RoomDetailSheetProps & { room: ExploreRoom }) {
   const [askPassword, setAskPassword] = useState(false);
   const [detail, setDetail] = useState<ChatRoomDetail | null>(null);
 
@@ -58,8 +54,8 @@ function Sheet({ room, joined, action, busy, onClose, onJoin, onEnter }: RoomDet
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [busy, askPassword, onClose]);
 
-  const view: ExploreRoomBase = detail ?? room;
-  const membership: MembershipStatus = detail?.membershipStatus ?? (joined ? "JOINED" : room.isBanned ? "BANNED" : "NONE");
+  const view: ExploreRoom = detail ?? room;
+  const membership: MembershipStatus = action === "joined" ? "JOINED" : view.membershipStatus;
   const blocked = membership === "BANNED" || action === "blocked";
   const full = membership !== "JOINED" && (action === "full" || view.participationCount >= view.maxParticipants);
   const ratio = Math.min(100, (view.participationCount / view.maxParticipants) * 100);
@@ -134,13 +130,7 @@ function Sheet({ room, joined, action, busy, onClose, onJoin, onEnter }: RoomDet
         )}
 
         {membership === "JOINED" ? (
-          <button
-            type="button"
-            onClick={() => onEnter(room)}
-            className="w-full h-[52px] rounded-2xl bg-primary text-white text-base font-extrabold"
-          >
-            입장하기
-          </button>
+          <DisabledCta label="이미 참여하고 있어요" />
         ) : blocked ? (
           <DisabledCta label="재입장 제한 중" />
         ) : full ? (

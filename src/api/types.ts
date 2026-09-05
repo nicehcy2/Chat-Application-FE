@@ -105,8 +105,8 @@ export interface ExploreRoomHost {
   jobGroup: JobGroup;
 }
 
-// 둘러보기 목록과 방 상세가 공유하는 부분
-export interface ExploreRoomBase {
+// GET /api/chats/explore 항목. GET /{id}/detail도 같은 모양이라 ChatRoomDetail로 별칭
+export interface ExploreRoom {
   chatRoomId: number;
   title: string;
   description: string;
@@ -119,20 +119,15 @@ export interface ExploreRoomBase {
   ageGroups: AgeGroup[];
   /** 비어 있으면 전체 대상 */
   jobGroups: JobGroup[];
+  /** 요청자 기준. 판정은 join API와 같다(강퇴가 최우선) */
+  membershipStatus: MembershipStatus;
   createdAt: string;
   /** 방장이 나가면 null. 위임은 서버 예정 */
   host: ExploreRoomHost | null;
 }
 
-// GET /api/chats/explore 항목. 내 멤버십 여부는 오지 않는다(강퇴만 isBanned)
-export interface ExploreRoom extends ExploreRoomBase {
-  isBanned: boolean;
-}
-
-// GET /api/chats/{id}/detail. 멤버가 아니어도 조회된다
-export interface ChatRoomDetail extends ExploreRoomBase {
-  membershipStatus: MembershipStatus;
-}
+// 멤버가 아니어도 조회된다
+export type ChatRoomDetail = ExploreRoom;
 
 export interface ExploreQuery {
   /** 제목·소개 부분일치. 50자 이하 */

@@ -18,6 +18,8 @@ const LOAD_MORE_THRESHOLD_PX = 200;
 const won = (n: number) => n.toLocaleString("ko-KR");
 
 const JOIN_ERROR_MESSAGE: Record<string, string> = {
+  // 목록을 받은 뒤 다른 탭 등에서 참여한 경우
+  CHATROOM4091: "이미 참여하고 있는 방이에요",
   CHATROOM4032: "재입장이 제한된 방이에요",
   CHATROOM409: "정원이 가득 찼어요",
   // 같은 유저의 동시 요청(unique 위반)
@@ -25,6 +27,7 @@ const JOIN_ERROR_MESSAGE: Record<string, string> = {
   CHATROOM404: "사라진 방이에요",
 };
 const JOIN_ERROR_ACTION: Partial<Record<string, RoomAction>> = {
+  CHATROOM4091: "joined",
   CHATROOM4032: "blocked",
   CHATROOM409: "full",
 };
@@ -41,8 +44,6 @@ export default function ChatRoomExplore() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  // 탐색 목록엔 내 멤버십이 없어 내 방 목록과 교차해 "입장" 버튼을 만든다
-  const [joinedIds, setJoinedIds] = useState<Set<number>>(new Set());
   const [actions, setActions] = useState<Record<number, RoomAction>>({});
   const [actionError, setActionError] = useState("");
   const [selected, setSelected] = useState<ExploreRoom | null>(null);
@@ -51,20 +52,6 @@ export default function ChatRoomExplore() {
     const timer = setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [query]);
-
-  useEffect(() => {
-    let cancelled = false;
-    chatApi
-      .getRooms()
-      .then((list) => {
-        if (!cancelled) setJoinedIds(new Set(list.map((r) => r.chatRoomId)));
-      })
-      // 실패해도 탐색은 동작한다. 참여 중인 방은 join 시 CHATROOM4091로 걸러진다
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,25 +121,19 @@ export default function ChatRoomExplore() {
   const setAction = (id: number, action: RoomAction) => setActions((prev) => ({ ...prev, [id]: action }));
   const busyRoomId = Object.entries(actions).find(([, a]) => a === "joining")?.[0];
 
-  const enterRoom = (room: ExploreRoom, participationCount: number) =>
-    navigate(`/chats/${room.chatRoomId}`, { state: { title: room.title, participationCount } });
-
   /** 비밀번호가 틀렸을 때만 false. 비밀번호 다이얼로그가 그 값으로 열림 여부를 정한다 */
   const handleJoin = async (room: ExploreRoom, password?: string): Promise<boolean> => {
     setAction(room.chatRoomId, "joining");
     setActionError("");
     try {
       await chatApi.joinRoom(room.chatRoomId, password);
-      enterRoom(room, room.participationCount + 1);
+      navigate(`/chats/${room.chatRoomId}`, {
+        state: { title: room.title, participationCount: room.participationCount + 1 },
+      });
       return true;
     } catch (err) {
       const code = err instanceof ApiError ? (err.code ?? "") : "";
 
-      // 이미 참여 중이면 오류가 아니라 그 방으로 보낸다
-      if (code === "CHATROOM4091") {
-        enterRoom(room, room.participationCount);
-        return true;
-      }
       if (code === "CHATROOM4031") {
         setAction(room.chatRoomId, "idle");
         if (password === undefined) setActionError("비밀번호가 맞지 않아요");
@@ -237,12 +218,10 @@ export default function ChatRoomExplore() {
                 <RoomCard
                   key={room.chatRoomId}
                   room={room}
-                  joined={joinedIds.has(room.chatRoomId)}
                   action={actions[room.chatRoomId] ?? "idle"}
                   isLast={i === rooms.length - 1}
                   onOpen={() => setSelected(room)}
                   onJoin={() => (room.isPrivate ? setSelected(room) : handleJoin(room))}
-                  onEnter={() => enterRoom(room, room.participationCount)}
                 />
               ))}
               {loadingMore && <p className="text-xs text-inkMuted text-center py-3">불러오는 중…</p>}
@@ -253,12 +232,10 @@ export default function ChatRoomExplore() {
 
       <RoomDetailSheet
         room={selected}
-        joined={selected !== null && joinedIds.has(selected.chatRoomId)}
         action={selected ? (actions[selected.chatRoomId] ?? "idle") : "idle"}
         busy={busyRoomId !== undefined}
         onClose={() => setSelected(null)}
         onJoin={handleJoin}
-        onEnter={(room) => enterRoom(room, room.participationCount)}
       />
     </div>
   );
@@ -280,20 +257,16 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
 
 function RoomCard({
   room,
-  joined,
   action,
   isLast,
   onOpen,
   onJoin,
-  onEnter,
 }: {
   room: ExploreRoom;
-  joined: boolean;
   action: RoomAction;
   isLast: boolean;
   onOpen: () => void;
   onJoin: () => void;
-  onEnter: () => void;
 }) {
   return (
     <div className={`flex gap-3.5 py-3 ${isLast ? "" : "border-b border-fillInput"}`}>
@@ -325,30 +298,20 @@ function RoomCard({
           </div>
         </div>
       </div>
-      <ActionButton room={room} joined={joined} action={action} onJoin={onJoin} onEnter={onEnter} />
+      <ActionButton room={room} action={action} onJoin={onJoin} />
     </div>
   );
 }
 
-function ActionButton({
-  room,
-  joined,
-  action,
-  onJoin,
-  onEnter,
-}: {
-  room: ExploreRoom;
-  joined: boolean;
-  action: RoomAction;
-  onJoin: () => void;
-  onEnter: () => void;
-}) {
+function ActionButton({ room, action, onJoin }: { room: ExploreRoom; action: RoomAction; onJoin: () => void }) {
   const base = "self-center h-9 px-3.5 rounded-xl text-[13px] font-extrabold shrink-0 transition-colors ease-out";
   const disabledClass = `${base} border-[1.4px] border-lineMid bg-fillSoft text-inkDisabled pointer-events-none`;
   const activeClass = `${base} border-[1.4px] border-primary bg-white text-primary`;
 
-  if (joined) return <button type="button" onClick={onEnter} className={`${base} bg-primary text-white`}>입장</button>;
-  if (room.isBanned || action === "blocked") return <button type="button" className={disabledClass}>제한</button>;
+  if (room.membershipStatus === "JOINED" || action === "joined") {
+    return <button type="button" className={disabledClass}>참여 중</button>;
+  }
+  if (room.membershipStatus === "BANNED" || action === "blocked") return <button type="button" className={disabledClass}>제한</button>;
   if (action === "full" || room.participationCount >= room.maxParticipants) {
     return <button type="button" className={disabledClass}>마감</button>;
   }
