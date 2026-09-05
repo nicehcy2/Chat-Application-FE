@@ -97,7 +97,7 @@ export interface ChatRoomInfoResponseDto {
 
 export type RoomVisibility = "PUBLIC" | "APPROVAL";
 
-// TODO(서버): POST /api/chats 구현 시 실제 요청 필드명에 맞춰 조정 (핸드오프 2d 기준)
+// 서버 CreateChatRoomRequestDto와 1:1. title ≤18, password는 isPrivate일 때 숫자 4자리
 export interface CreateRoomRequest {
   title: string;
   description: string;

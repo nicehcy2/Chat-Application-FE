@@ -24,7 +24,7 @@ export const chatApi = {
   getParticipants: (roomId: string | number) =>
     request<ChatRoomParticipantDto[]>("chat", `/api/chats/${roomId}/participants`),
 
-  // TODO(서버): 아직 미구현. 응답은 생성된 chatRoomId로 가정.
+  // 201 + 생성된 chatRoomId. @Valid 실패는 ApiError.fieldErrors로 온다.
   createRoom: (payload: CreateRoomRequest) =>
     request<number>("chat", "/api/chats", { method: "POST", body: payload }),
 
