@@ -5,6 +5,8 @@ import { userApi } from "../api/userApi";
 import { ApiError } from "../api/client";
 import BackButton from "../components/BackButton";
 
+const LOGIN_FAIL_CODES = ["USER401", "USER404"];
+
 export default function Login() {
   const navigate = useNavigate();
   const { state } = useLocation() as { state: { from?: string } | null };
@@ -28,11 +30,10 @@ export default function Login() {
       setAuth(session);
       navigate(state?.from ?? "/", { replace: true });
     } catch (err) {
-      setError(
-        err instanceof ApiError && (err.status === 401 || err.status === 400 || err.status === 404)
-          ? "이메일 또는 비밀번호가 올바르지 않아요"
-          : "로그인하지 못했어요. 잠시 후 다시 시도해주세요",
-      );
+      // USER401(비밀번호 불일치)·USER404(없는 계정)는 계정 존재 여부를 드러내지 않도록 같은 문구로
+      const credentialFail =
+        err instanceof ApiError && (LOGIN_FAIL_CODES.includes(err.code ?? "") || err.status === 401 || err.status === 404);
+      setError(credentialFail ? "이메일 또는 비밀번호가 올바르지 않아요" : "로그인하지 못했어요. 잠시 후 다시 시도해주세요");
     } finally {
       setSubmitting(false);
     }

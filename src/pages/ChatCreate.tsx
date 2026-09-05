@@ -8,7 +8,7 @@ import type { AgeGroup, JobGroup } from "../api/types";
 import { JOB_GROUP_OPTIONS } from "../constants/user";
 
 const TITLE_MIN = 2;
-const TITLE_MAX = 20;
+const TITLE_MAX = 18; // 서버 CreateChatRoomRequestDto @Size(max = 18)
 const INTRO_MAX = 100;
 const MEMBER_PRESETS = [10, 30, 50, 100];
 const LIMIT_MIN = 5_000;
@@ -28,8 +28,12 @@ const won = (n: number) => n.toLocaleString("ko-KR");
 
 interface FieldErrors {
   title?: string;
+  description?: string;
   password?: string;
 }
+
+// 서버 fieldErrors의 field명 → 화면 블록. 여기 없는 필드는 하단 공통 메시지로.
+const INLINE_FIELDS = ["title", "description", "password"] as const;
 
 export default function ChatCreate() {
   const navigate = useNavigate();
@@ -46,7 +50,13 @@ export default function ChatCreate() {
   const [submitting, setSubmitting] = useState(false);
 
   const titleRef = useRef<HTMLDivElement>(null);
+  const introRef = useRef<HTMLDivElement>(null);
   const passwordRef = useRef<HTMLDivElement>(null);
+
+  const scrollToFirstError = (next: FieldErrors) => {
+    const target = next.title ? titleRef : next.description ? introRef : next.password ? passwordRef : null;
+    target?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   const toggleAge = (values: AgeGroup[]) =>
     setAgeGroups((prev) => {
@@ -70,8 +80,7 @@ export default function ChatCreate() {
     if (submitting) return;
     const next = validate();
     setErrors(next);
-    if (next.title) return titleRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    if (next.password) return passwordRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (next.title || next.password) return scrollToFirstError(next);
 
     setSubmitting(true);
     setSubmitError("");
@@ -88,8 +97,21 @@ export default function ChatCreate() {
       });
       navigate(`/chats/${newId}`, { replace: true, state: { title: title.trim(), participationCount: 1 } });
     } catch (e) {
-      // TODO(서버): 400 응답의 field명을 받아 해당 블록 인라인 에러로 매핑
-      setSubmitError(e instanceof ApiError ? e.message : "방을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
+      if (e instanceof ApiError && e.fieldErrors.length > 0) {
+        // @Valid 실패: 화면에 블록이 있는 필드는 인라인으로, 나머지는 하단에 모아서
+        const inline: FieldErrors = {};
+        const others: string[] = [];
+        e.fieldErrors.forEach(({ field, message }) => {
+          if ((INLINE_FIELDS as readonly string[]).includes(field)) inline[field as keyof FieldErrors] = message;
+          else others.push(message);
+        });
+        setErrors(inline);
+        setSubmitError(others.join(" "));
+        scrollToFirstError(inline);
+      } else {
+        // 필드 간 규칙 위반(비공개인데 비밀번호 없음 등)이나 그 외 실패는 서버 메시지 그대로
+        setSubmitError(e instanceof ApiError ? e.message : "방을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -138,14 +160,19 @@ export default function ChatCreate() {
             </div>
           </Section>
 
-          <Section label="소개">
+          <Section ref={introRef} label="소개" error={errors.description}>
             <div className="relative">
               <textarea
                 value={intro}
                 maxLength={INTRO_MAX}
-                onChange={(e) => setIntro(e.target.value)}
+                onChange={(e) => {
+                  setIntro(e.target.value);
+                  if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }));
+                }}
                 placeholder="어떤 사람들과, 어떤 규칙으로 아낄 건가요?"
-                className="w-full min-h-[74px] rounded-[14px] bg-fillInput border-[1.4px] border-transparent px-4 py-3 pb-7 text-sm leading-[1.5] text-ink placeholder:text-inkPlaceholder outline-none resize-none"
+                className={`w-full min-h-[74px] rounded-[14px] border-[1.4px] px-4 py-3 pb-7 text-sm leading-[1.5] text-ink placeholder:text-inkPlaceholder outline-none resize-none ${
+                  errors.description ? "bg-dangerTintBg border-danger" : "bg-fillInput border-transparent"
+                }`}
               />
               <Counter value={intro.length} max={INTRO_MAX} className="right-3.5 bottom-2.5" />
             </div>

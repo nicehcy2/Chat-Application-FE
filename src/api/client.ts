@@ -8,13 +8,46 @@ const SERVICE_PATH: Record<Service, string> = {
   chat: "/chat-api-service",
 };
 
+export interface FieldError {
+  field: string;
+  message: string;
+}
+
+// 서버 공통 에러 바디: { code, message, fieldErrors?: [{ field, message }] }
+interface ErrorBody {
+  code?: string;
+  message?: string;
+  fieldErrors?: FieldError[];
+}
+
 export class ApiError extends Error {
   readonly status: number;
+  readonly code: string | null;
+  /** @Valid 실패 시 필드별 메시지. 없으면 빈 배열 */
+  readonly fieldErrors: FieldError[];
 
-  constructor(status: number, message?: string) {
-    super(message || `요청 실패 (${status})`);
+  constructor(status: number, body?: ErrorBody | string | null) {
+    const parsed: ErrorBody = typeof body === "string" ? { message: body } : (body ?? {});
+    super(parsed.message || `요청 실패 (${status})`);
     this.name = "ApiError";
     this.status = status;
+    this.code = parsed.code ?? null;
+    this.fieldErrors = parsed.fieldErrors ?? [];
+  }
+
+  /** 특정 필드의 에러 메시지 */
+  fieldMessage(field: string): string | undefined {
+    return this.fieldErrors.find((f) => f.field === field)?.message;
+  }
+}
+
+function parseErrorBody(text: string): ErrorBody | string {
+  if (!text) return "";
+  try {
+    const json = JSON.parse(text);
+    return json && typeof json === "object" ? (json as ErrorBody) : text;
+  } catch {
+    return text;
   }
 }
 
@@ -87,8 +120,8 @@ export async function request<T = void>(
   }
 
   if (!res.ok) {
-    const message = await res.text().catch(() => "");
-    throw new ApiError(res.status, message);
+    const text = await res.text().catch(() => "");
+    throw new ApiError(res.status, parseErrorBody(text));
   }
 
   return parse<T>(res);
