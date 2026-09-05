@@ -2,20 +2,23 @@ import { useEffect, useState } from "react";
 import type { ExploreRoom } from "../../mocks/explore";
 import { thumbFallbackClass } from "../../utils/thumb";
 
+/** blocked·full은 join 실패 응답(CHATROOM4032·CHATROOM409)으로만 알 수 있어 카드별 상태로 든다 */
+export type RoomAction = "idle" | "joining" | "applied" | "blocked" | "full";
+
 interface RoomDetailSheetProps {
   room: ExploreRoom | null;
+  action: RoomAction;
   busy: boolean;
   onClose: () => void;
-  onJoin: (room: ExploreRoom) => void;
+  /** 비밀번호가 틀리면 false. 성공·그 외 오류는 true(시트 밖에서 처리) */
+  onJoin: (room: ExploreRoom, password?: string) => Promise<boolean>;
   onApply: (room: ExploreRoom) => void;
-  /** 비공개 방. 비밀번호가 맞으면 true를 돌려준다 */
-  onValidatePassword: (room: ExploreRoom, password: string) => Promise<boolean>;
 }
 
 const won = (n: number) => n.toLocaleString("ko-KR");
 
 // 탐색 카드 탭 → 바텀시트. 뒤의 목록은 그대로 두어 이탈 비용을 0으로.
-export default function RoomDetailSheet({ room, busy, onClose, onJoin, onApply, onValidatePassword }: RoomDetailSheetProps) {
+export default function RoomDetailSheet({ room, action, busy, onClose, onJoin, onApply }: RoomDetailSheetProps) {
   const [askPassword, setAskPassword] = useState(false);
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export default function RoomDetailSheet({ room, busy, onClose, onJoin, onApply, 
 
   if (!room) return null;
 
-  const full = room.participantCount >= room.maxParticipants;
+  const full = action === "full" || room.participantCount >= room.maxParticipants;
   const ratio = Math.min(100, (room.participantCount / room.maxParticipants) * 100);
   const isApproval = room.visibility === "APPROVAL";
 
@@ -96,7 +99,7 @@ export default function RoomDetailSheet({ room, busy, onClose, onJoin, onApply, 
 
         {full ? (
           <DisabledCta label="정원이 가득 찼어요" />
-        ) : room.rejoinBlocked ? (
+        ) : action === "blocked" ? (
           <DisabledCta label="재입장 제한 중" />
         ) : (
           <button
@@ -115,12 +118,15 @@ export default function RoomDetailSheet({ room, busy, onClose, onJoin, onApply, 
           busy={busy}
           onCancel={() => setAskPassword(false)}
           onSubmit={async (password) => {
-            const ok = await onValidatePassword(room, password);
-            if (!ok) return false;
-            setAskPassword(false);
-            if (isApproval) onApply(room);
-            else onJoin(room);
-            return true;
+            if (isApproval) {
+              setAskPassword(false);
+              onApply(room);
+              return true;
+            }
+            // 검증 API 없음. join이 곧 검증이라 틀리면(CHATROOM4031) 다이얼로그를 유지한다
+            const ok = await onJoin(room, password);
+            if (ok) setAskPassword(false);
+            return ok;
           }}
         />
       )}

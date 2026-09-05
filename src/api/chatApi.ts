@@ -28,7 +28,15 @@ export const chatApi = {
   createRoom: (payload: CreateRoomRequest) =>
     request<number>("chat", "/api/chats", { method: "POST", body: payload }),
 
-  // TODO(서버): 로드맵 ⑤ 입장/퇴장/추방. 구현 전까지는 404가 난다.
+  // 공개방은 body 없이. 비밀번호 검증도 join이 하므로 별도 validate 호출은 없다.
+  // 실패 코드: CHATROOM4091 이미 참여, CHATROOM4031 비밀번호, CHATROOM4032 강퇴, CHATROOM409 정원, 409 동시 요청, CHATROOM404
+  joinRoom: (roomId: string | number, password?: string) =>
+    request<number>("chat", `/api/chats/${roomId}/join`, {
+      method: "POST",
+      body: password ? { password } : undefined,
+    }),
+
+  // TODO(서버): 로드맵 ⑤ 퇴장/추방. 구현 전까지는 404가 난다.
   leaveRoom: (roomId: string | number) =>
     request("chat", `/api/chats/${roomId}/leave`, { method: "POST" }),
 

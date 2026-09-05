@@ -1,26 +1,39 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { chatApi } from "../api/chatApi";
+import { ApiError } from "../api/client";
+import { useAuth } from "../contexts/AuthContext";
 import {
   EXPLORE_FILTERS,
   applyRoom,
   fetchExploreRooms,
-  joinRoom,
-  validateRoomPassword,
   type ExploreFilter,
   type ExploreRoom,
 } from "../mocks/explore";
 import { thumbFallbackClass } from "../utils/thumb";
-import RoomDetailSheet from "../components/explore/RoomDetailSheet";
+import RoomDetailSheet, { type RoomAction } from "../components/explore/RoomDetailSheet";
 import StateView from "../components/StateView";
 
 type Status = "loading" | "success" | "empty" | "error";
-type RoomAction = "idle" | "joining" | "applied";
 
 const SEARCH_DEBOUNCE_MS = 300;
 const won = (n: number) => n.toLocaleString("ko-KR");
 
+const JOIN_ERROR_MESSAGE: Record<string, string> = {
+  CHATROOM4032: "재입장이 제한된 방이에요",
+  CHATROOM409: "정원이 가득 찼어요",
+  // 같은 유저의 동시 요청(unique 위반)
+  "409": "잠시 후 다시 시도해주세요",
+  CHATROOM404: "사라진 방이에요",
+};
+const JOIN_ERROR_ACTION: Partial<Record<string, RoomAction>> = {
+  CHATROOM4032: "blocked",
+  CHATROOM409: "full",
+};
+
 export default function ChatRoomExplore() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [filter, setFilter] = useState<ExploreFilter>("인기");
@@ -71,21 +84,45 @@ export default function ChatRoomExplore() {
   const setAction = (id: number, action: RoomAction) => setActions((prev) => ({ ...prev, [id]: action }));
   const busyRoomId = Object.entries(actions).find(([, a]) => a === "joining")?.[0];
 
-  // TODO(서버): POST /join 구현 후 실제 방으로 이동
-  const handleJoin = async (room: ExploreRoom) => {
+  const enterRoom = (room: ExploreRoom, participationCount: number) =>
+    navigate(`/chats/${room.chatRoomId}`, { state: { title: room.title, participationCount } });
+
+  /** 비밀번호가 틀렸을 때만 false. 비밀번호 다이얼로그가 그 값으로 열림 여부를 정한다 */
+  const handleJoin = async (room: ExploreRoom, password?: string): Promise<boolean> => {
     setAction(room.chatRoomId, "joining");
     setActionError("");
     try {
-      await joinRoom(room.chatRoomId);
-      navigate(`/chats/${room.chatRoomId}`, {
-        state: { title: room.title, participationCount: room.participantCount + 1 },
-      });
-    } catch {
-      setAction(room.chatRoomId, "idle");
-      setActionError("참여하지 못했어요. 잠시 후 다시 시도해주세요.");
+      await chatApi.joinRoom(room.chatRoomId, password);
+      enterRoom(room, room.participantCount + 1);
+      return true;
+    } catch (err) {
+      const code = err instanceof ApiError ? (err.code ?? "") : "";
+
+      // 이미 참여 중이면 오류가 아니라 그 방으로 보낸다
+      if (code === "CHATROOM4091") {
+        enterRoom(room, room.participantCount);
+        return true;
+      }
+      if (code === "CHATROOM4031") {
+        setAction(room.chatRoomId, "idle");
+        if (password === undefined) setActionError("비밀번호가 맞지 않아요");
+        return false;
+      }
+
+      setSelected(null);
+      setAction(room.chatRoomId, JOIN_ERROR_ACTION[code] ?? "idle");
+      if (code === "USER404") {
+        // 토큰의 사용자가 DB에 없음. 세션을 비우면 ProtectedRoute가 로그인으로 보낸다
+        await logout();
+        return true;
+      }
+      if (code === "CHATROOM404") setReloadKey((k) => k + 1);
+      setActionError(JOIN_ERROR_MESSAGE[code] ?? "참여하지 못했어요. 잠시 후 다시 시도해주세요.");
+      return true;
     }
   };
 
+  // TODO(서버): 승인제 신청 API 없음. 목 유지
   const handleApply = async (room: ExploreRoom) => {
     setAction(room.chatRoomId, "joining");
     setActionError("");
@@ -178,11 +215,11 @@ export default function ChatRoomExplore() {
 
       <RoomDetailSheet
         room={selected}
+        action={selected ? (actions[selected.chatRoomId] ?? "idle") : "idle"}
         busy={busyRoomId !== undefined}
         onClose={() => setSelected(null)}
         onJoin={handleJoin}
         onApply={handleApply}
-        onValidatePassword={(room, password) => validateRoomPassword(room.chatRoomId, password)}
       />
     </div>
   );
@@ -203,7 +240,7 @@ function RoomCard({
   onJoin: () => void;
   onApply: () => void;
 }) {
-  const full = room.participantCount >= room.maxParticipants;
+  const full = action === "full" || room.participantCount >= room.maxParticipants;
 
   return (
     <div className={`flex gap-3.5 py-3 ${isLast ? "" : "border-b border-fillInput"}`}>
@@ -254,7 +291,7 @@ function ActionButton({
   const activeClass = `${base} border-[1.4px] border-primary bg-white text-primary`;
 
   if (full) return <button type="button" className={disabledClass}>마감</button>;
-  if (room.rejoinBlocked) return <button type="button" className={disabledClass}>제한</button>;
+  if (action === "blocked") return <button type="button" className={disabledClass}>제한</button>;
   if (action === "applied") return <button type="button" className={disabledClass}>신청됨</button>;
   if (action === "joining") return <button type="button" className={disabledClass}>…</button>;
 
